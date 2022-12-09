@@ -1,6 +1,5 @@
 package main
 
-// bike route simulator
 import (
 	"crypto/sha256"
 	"encoding/json"
@@ -14,24 +13,6 @@ import (
 	"bikeride/power"
 	"bikeride/route"
 )
-
-// format Shift+Alt+F
-// https://www.gpsvisualizer.com/
-// Ctrl+Shift+P ja vscodecounter
-
-// go tool pprof --text --cum bikeride.exe cpu.pprof > prof.txt
-// go tool pprof --tree  bikeride.exe cpu.pprof > pprof.tree
-// go build -ldflags=-w -> pienempi exe
-// go build -gcflags -m motion -> inlining info of packet route
-// Use `gcflags="-l -S" to disable inlining
-// -gcflags='-l -l -l' inlining level 3, more aggressive again, binaries definitely bigger
-// go clean -cache
-// go doc -all motion
-// go tool compile -S xoro.go > xoro.s
-// go install cmd/bikeride
-// https://github.com/pekkizen
-// https://github.com/gonum/gonum/issues/1227
-// https://github.com/golang/exp/tree/master/rand
 
 const ms2kmh = 3.6
 const deBug = true
