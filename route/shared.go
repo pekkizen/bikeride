@@ -1,0 +1,305 @@
+package route
+
+import (
+	"bikeride/param"
+	"math"
+)
+
+const (
+	deBUG      = true
+	distTol    = 0.1
+	sameVelTol = 0.025
+	minForce   = 0.05
+	minDist    = 0.05
+	maxDist    = 500.0
+	maxDele    = 25.0
+)
+
+const (
+	π       = math.Pi
+	deg2rad = π / 180
+	rad2deg = 180.0 / π
+)
+
+const (
+	mh2ms   = 1.0 / 3600
+	s2h     = 1.0 / 3600
+	kmh2ms  = 1.0 / 3.6
+	ms2kmh  = 3.6
+	m2km    = 1.0 / 1000
+	sec2min = 1.0 / 60
+	j2Wh    = 1.0 / 3600
+	kj2wh   = 1.0 / 3.6
+)
+
+//https://fineli.fi/fineli/en/elintarvikkeet/11049?portionUnit=KPL_M&portionSize=1
+// banana: 1 medium sized piece 125 g = 458 kJ
+// lard 3591 kJ / 100 g
+
+const (
+	humanEfficiency = 0.24
+	banana2Wh       = 458.0 * kj2wh
+	lard2Wh         = 3591.0 * kj2wh
+	j2banana        = j2Wh / (banana2Wh * humanEfficiency)
+	j2lard          = 100.0 * j2Wh / (lard2Wh * humanEfficiency)
+	j2kcal          = (1.0 / 4184) / humanEfficiency
+)
+
+const (
+	acceleration    = 1
+	braking         = 2
+	deceleration    = 3
+	ridingConstVel  = 4
+	brakingConstVel = 5
+	freewheeling    = 0
+	distExeeded     = 7
+	vTargetExeeded  = 8
+	wrongForce      = 9
+)
+
+type errstr struct {
+	s string
+}
+
+func (e *errstr) Error() string {
+	return e.s
+}
+func errf(s string) error {
+	return &errstr{s}
+}
+
+func min(x, y float64) float64 {
+	if x < y {
+		return x
+	}
+	return y
+}
+func max(x, y float64) float64 {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+func (o *Route) Segments() int {
+	return o.segments
+}
+
+type par *param.Parameters
+
+type route []segment
+
+type filter struct {
+	rounds int
+	// backstepRounds int
+	backstepDist   float64
+	backsteps      int
+	initRelgrade   float64
+	minRelGrade    float64
+	maxFilteredEle float64
+	levelFactor    float64
+	levelMax       float64
+	levelMin       float64
+	ipoDist        float64
+	ipoSumDist     float64
+	ipolations     int
+	levelations    int
+	eleLeveled     float64
+	minSegDist     float64
+}
+
+type Route struct {
+	route        route
+	filter       filter
+	trkpErrors   int
+	trkpRejected int
+	segments     int
+
+	distance        float64
+	distDirect      float64
+	distMean        float64
+	distMedian      float64
+	limitTurnSpeeds bool
+
+	routeCourse float64
+	windCourse  float64
+	windSin     float64
+	windCos     float64
+	windSpeed   float64
+	metersLon   float64
+	metersLat   float64
+
+	eleUp         float64
+	eleDown       float64
+	eleUpGPX      float64
+	eleDownGPX    float64
+	nonFilterable float64
+	eleMissing    int
+	vMaxToNext    int
+
+	jouleRider float64
+	time       float64
+
+	//public for main.go
+	EleMean     float64
+	LatMean     float64
+	Gravity     float64
+	Temperature float64
+	Rho         float64
+}
+
+type Results struct {
+	WindCourse     float64
+	WindSpeed      float64
+	RouteCourse    float64
+	BaseElevation  float64
+	AirPressure    float64
+	MeanElevation  float64
+	Temperature    float64
+	Rho            float64
+	Segments       int
+	TrkpErrors     int
+	TrkpRejected   int
+	DistTotal      float64
+	DistDirect     float64
+	DistBrake      float64
+	DistHeavyBrake float64
+	DistFreewheel  float64
+	DistUphill     float64
+	DistDownhill   float64
+	DistFlat       float64
+	DistMedian     float64
+	DistMean       float64
+	DistMax        float64
+	DistMin        float64
+
+	EleUp        float64
+	EleUpKinetic float64
+	EleDown      float64
+	EleUpGPX     float64
+	EleDownGPX   float64
+	EleLevelled  float64
+	EleMean      float64
+	EleMissing   int
+
+	LatMean float64
+	Gravity float64
+
+	Filtered        float64
+	Filterable      float64
+	FilteredPros    float64
+	Ipolations      int
+	Levelations     int
+	FilterRounds    int
+	MinGrade        float64
+	MaxGrade        float64
+	GradeSignChange float64
+
+	Time              float64
+	TimeRider         float64
+	TimeBraking       float64
+	TimeUHBreaks      float64
+	TimeFullPower     float64
+	TimeOverFlatPower float64
+	TimeTargetSpeeds  float64
+
+	VelAvg             float64
+	VelMax             float64
+	VelMin             float64
+	VelDownhill        float64
+	VelDownVert        float64
+	TimeDownhill       float64
+	VerticalDownEle    float64
+	DownhillMaxSpeed   float64
+	MaxGradeUp         float64
+	DownhillPowerSpeed float64
+
+	JriderTotal float64
+	FoodRider   float64
+	BananaRider float64
+	FatRider    float64
+
+	JfromTargetPower float64
+	JriderFullPower  float64
+	JriderGravUp     float64
+	JriderDrag       float64
+	JriderRoll       float64
+	JriderAcce       float64
+	JlossDT          float64
+	PowerRiderAvg    float64
+	EnergySumRider   float64
+
+	JkineticDece     float64
+	JkineticAcce     float64
+	JdragRes         float64
+	JdragBrake       float64
+	JdragPush        float64
+	Jroll            float64
+	JgravUp          float64
+	JgravDown        float64
+	Jbraking         float64
+	EnergySumTotal   float64
+	SegEnergyMeanAbs float64
+	SegEnergyMean    float64
+
+	SolverRoundsAvg   float64
+	VelErrorMean      float64
+	VelErrorAbsMean   float64
+	VelErrorPos       float64
+	VelErrorMax       float64
+	MaxIter           int
+	SolverCalls       int
+	FreewheelCalls    int
+	PowerFromVelCalls int
+	CalcSteps         int
+	CalcSegs          int
+	CalcStepsAvg      float64
+	SingleStepPros    float64
+}
+
+type segment struct {
+	segnum  int
+	lon     float64
+	lat     float64
+	ele     float64
+	eleGPX  float64
+	grade   float64
+	dist    float64
+	distHor float64
+
+	course       float64
+	radius       float64
+	wind         float64
+	interpolable bool
+	ipoCoef      float64
+
+	powerTarget float64
+	vTarget     float64
+	vEntry      float64
+	vExit       float64
+	vMax        float64
+	vEntryMax   float64
+
+	jouleRider   float64
+	jRiderDece   float64
+	jouleGrav    float64
+	jouleRoll    float64
+	jouleDrag    float64
+	jouleKinetic float64
+	jouleBraking float64
+	powerRider   float64
+	powerBraking float64
+
+	distKinetic   float64
+	distLeft      float64
+	distBraking   float64
+	distFreewheel float64
+
+	time        float64
+	timeRider   float64
+	timeBraking float64
+	timeBreak   float64
+
+	calcSteps int
+	calcPath  int
+}
