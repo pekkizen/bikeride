@@ -1,0 +1,26 @@
+Reittilinkit Google Mapsiin ja Brouteriin
+
+cordoba.gpx: Cordoba >-Rio de Lora
+
+http://brouter.de/brouter-web/#zoom=13&lat=37.8322&lon=-4.874&layer=Outdoors%20(Thunderforest)&lonlats=-4.805059,37.843071|-5.064783,37.780891|-5.118256,37.740721|-5.14452,37.76488|-5.255413,37.715196|-5.526252,37.643427&nogos=&profile=fastbike&alternativeidx=0&format=geojson
+
+https://maps.app.goo.gl/?link=https://goo.gl/maps/eVUYSD3dyt52?utm_source%3Dapp-invite%26mt%3D8%26pt%3D9008%26utm_medium%3DSIMPLE%26utm_campaign%3Ds2e-ai%26ct%3Ds2e-ai&apn=com.google.android.apps.maps&amv=703000000&isi=585027354&ibi=com.google.Maps&ius=comgooglemapsurl&utm_source=app-invite&mt=8&pt=9008&utm_medium=SIMPLE&utm_campaign=s2e-ai&ct=s2e-ai&invitation_id=493454522602-663a5bb2-be27-4ffb-af7e-12eabbdaede0
+
+riodelora.gpx: Rio de Lora -> Cazalla de la Sierra
+
+http://brouter.de/brouter-web/#zoom=13&lat=37.8852&lon=-5.6985&layer=Outdoors%20(Thunderforest)&lonlats=-5.533601,37.666896|-5.620193,37.859676|-5.72834,37.941219|-5.754175,37.938732&nogos=&profile=fastbike&alternativeidx=0&format=geojson
+
+https://maps.app.goo.gl/?link=https://goo.gl/maps/KEPCS1qM3C62?utm_source%3Dapp-invite%26mt%3D8%26pt%3D9008%26utm_medium%3DSIMPLE%26utm_campaign%3Ds2e-ai%26ct%3Ds2e-ai&apn=com.google.android.apps.maps&amv=703000000&isi=585027354&ibi=com.google.Maps&ius=comgooglemapsurl&utm_source=app-invite&mt=8&pt=9008&utm_medium=SIMPLE&utm_campaign=s2e-ai&ct=s2e-ai&invitation_id=493454522602-c312275b-f99c-4e20-a10d-6fa3b3f5211f
+
+cazalla.gpx: Cazalla de la Sierra -> Fuente Obejuna
+
+http://brouter.de/brouter-web/#zoom=14&lat=38.02257&lon=-5.74766&layer=OpenStreetMap&lonlats=-5.760226,37.942556|-5.718555,38.039135|-5.708084,38.039878|-5.620311,38.081144|-5.417891,38.261502&nogos=&profile=fastbike&alternativeidx=0&format=geojson
+
+https://maps.app.goo.gl/?link=https://goo.gl/maps/UhwpsEf2eXn?utm_source%3Dapp-invite%26mt%3D8%26pt%3D9008%26utm_medium%3DSIMPLE%26utm_campaign%3Ds2e-ai%26ct%3Ds2e-ai&apn=com.google.android.apps.maps&amv=703000000&isi=585027354&ibi=com.google.Maps&ius=comgooglemapsurl&utm_source=app-invite&mt=8&pt=9008&utm_medium=SIMPLE&utm_campaign=s2e-ai&ct=s2e-ai&invitation_id=493454522602-0d9eb043-3de9-4d43-acd7-72820ef5e4e1
+
+fuenteobe.gpx: Fuente Obejuna - Cordoba
+
+http://brouter.de/brouter-web/#zoom=14&lat=37.96358&lon=-4.86566&layer=OpenStreetMap&lonlats=-5.417976,38.261485|-5.154219,38.190367|-5.018327,38.075739|-5.017343,38.076043|-5.002041,38.071204|-4.803686,37.91876&nogos=&profile=fastbike&alternativeidx=0&format=geojson
+
+https://maps.app.goo.gl/?link=https://goo.gl/maps/2G6DwF9PLr12?utm_source%3Dapp-invite%26mt%3D8%26pt%3D9008%26utm_medium%3DSIMPLE%26utm_campaign%3Ds2e-ai%26ct%3Ds2e-ai&apn=com.google.android.apps.maps&amv=703000000&isi=585027354&ibi=com.google.Maps&ius=comgooglemapsurl&utm_source=app-invite&mt=8&pt=9008&utm_medium=SIMPLE&utm_campaign=s2e-ai&ct=s2e-ai&invitation_id=493454522602-12c81fb6-24f0-426b-8207-00dd9c5fc360
+
