@@ -5,30 +5,6 @@ import (
 	"math"
 )
 
-// func velStepsAcce(vEntry, vExit, Δvel float64) (steps int, ΔvelOut float64) {
-// 	vrange := vExit - vEntry
-// 	if vrange < Δvel {
-// 		steps = 1
-// 		ΔvelOut = vrange
-// 		return
-// 	}
-// 	steps = int(vrange/Δvel) + 1
-// 	ΔvelOut = vrange / float64(steps)
-// 	return
-// }
-
-// func velStepsDece(vEntry, vExit, Δvel float64) (steps int, ΔvelOut float64) {
-// 	vrange := vEntry - vExit
-// 	if vrange < Δvel {
-// 		steps = 1
-// 		ΔvelOut = -vrange
-// 		return
-// 	}
-// 	steps = int(vrange/Δvel) + 1
-// 	ΔvelOut = -vrange / float64(steps)
-// 	return
-// }
-
 func velSteps(vEntry, vExit, Δvel float64) (steps int, ΔvelOut float64) {
 	vrange := vExit - vEntry
 	if math.Abs(vrange) < Δvel {
