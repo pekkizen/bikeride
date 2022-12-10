@@ -67,7 +67,7 @@ type calculation struct {
 	ReportTech   bool
 	CalcVelError bool
 	UseVelTable  bool
-	MinPower     float64
+	// MinPower     float64 10.12
 	// SameVelTol        float64 `json:"sameVelTol (m/s)"`
 	SingleStepBraking bool
 	PowerIn           float64
@@ -91,7 +91,6 @@ type filesEtc struct {
 	CSVuseComma     bool
 	GPXuseXMLparser bool
 	GPXignoreErrors bool
-	// CSVdesimals     int // not used
 	Display        bool
 	LogMode        int
 	LogLevel       int
@@ -115,10 +114,10 @@ type rideControl struct {
 	LimitEntrySpeeds  bool
 	VerticalDownSpeed float64 `json:"verticalDownSpeed (m/h)"`
 	BrakingDist       float64 `json:"brakingDist (m)"`
-	PowerAcceCoef     float64 `json:"accelerationPowerFactor"`
+	PowerAcceCoef     float64 `json:"accelerationPower (%)"`
 	PowerAcceMinPros  float64 `json:"minAccelerationPower (%)"`
-	PowerDeceCoef     float64 `json:"decelerationPowerFactor"`
-	SpeedDeceCoef     float64 `json:"decelerationSpeedFactor"`
+	PowerDeceCoef     float64 `json:"decelerationPower (%)"`
+	SpeedDeceCoef     float64 `json:"deceFreeWheelCutoff"`
 }
 
 type weight struct {
@@ -279,7 +278,7 @@ func (p *Parameters) setSystemDefaultValues() {
 	p.Filter.InitialRelGrade = 7
 	p.Filter.MinRelGrade = 0.1
 	p.Filter.BackstepRounds = 0
-	p.Filter.BackstepDist = 0
+	p.Filter.BackstepDist = 200
 	p.Filter.Backsteps = 5
 	p.Filter.LevelFactor = 0.5
 	p.Filter.LevelMax = 4
@@ -309,7 +308,6 @@ func (p *Parameters) setSystemDefaultValues() {
 	p.LimitTurnSpeeds = false
 	p.LimitDownSpeeds = true
 	p.LimitEntrySpeeds = false
-	// p.SameVelTol = 0.025
 	p.VelLimitGrade = -3
 	p.SteepDownhillGrade = -10
 	p.VerticalUpGrade = 7
@@ -318,9 +316,9 @@ func (p *Parameters) setSystemDefaultValues() {
 	p.MinLimitedSpeed = 10
 	p.MinSpeed = 3
 
-	p.PowerAcceCoef = 1.1
+	p.PowerAcceCoef = 120
 	p.PowerAcceMinPros = 50
-	p.PowerDeceCoef = 0.9
+	p.PowerDeceCoef = 80
 	p.SpeedDeceCoef = 0.5
 
 	p.DeltaVel = 0.5
@@ -395,10 +393,10 @@ func getAttributes() attributesMap {
 	m.put("downhillHeadwindPower", 50, 125, "%", 0)
 	m.put("downhillTailwindPower", 1, 20, "%", 0)
 
-	m.put("decelerationPowerFactor", 0.5, 1, "", 0)
-	m.put("accelerationPowerFactor", 1, 2, "", 0)
+	m.put("decelerationPower", 50, 99, "%", 0)
+	m.put("accelerationPower", 101, 150, "%", 0)
 	m.put("minAccelerationPower", 0, 200, "%", 0)
-	m.put("decelerationSpeedFactor", 0, 1, "", 0)
+	m.put("deceFreeWheelCutoff", 0, 1, "", 0)
 
 	m.put("rollingResistanceCoef", 0.001, 0.02, "", 0)
 	m.put("brakingFrictionCoef", 0.1, 0.5, "", 0)
@@ -488,10 +486,10 @@ func checkParamRange(p *Parameters, m attributesMap, l logger) {
 	m.check(Q.DownhillHeadwindPower, "downhillHeadwindPower", l)
 	m.check(Q.DownhillTailwindPower, "downhillTailwindPower", l)
 
-	m.check(p.PowerDeceCoef, "decelerationPowerFactor", l)
-	m.check(p.PowerAcceCoef, "accelerationPowerFactor", l)
+	m.check(p.PowerDeceCoef, "decelerationPower", l)
+	m.check(p.PowerAcceCoef, "accelerationPower", l)
 	m.check(p.PowerAcceMinPros, "minAccelerationPower", l)
-	m.check(p.SpeedDeceCoef, "decelerationSpeedFactor", l)
+	m.check(p.SpeedDeceCoef, "deceFreeWheelCutoff", l)
 	m.check(p.MinSpeed, "minSpeed", l)
 	m.check(p.MinLimitedSpeed, "minLimitedSpeed", l)
 
@@ -534,6 +532,8 @@ func (p *Parameters) UnitConversionIn() {
 	p.UphillBreak.ClimbDuration *= min2sec
 	p.UphillBreak.BreakDuration *= min2sec
 	p.PowerAcceMinPros /= 100
+	p.PowerAcceCoef  /= 100
+	p.PowerDeceCoef  /= 100
 	p.VelLimitGrade /= 100
 	p.VerticalUpGrade /= 100
 	p.Filter.InitialRelGrade /= 100
@@ -562,6 +562,9 @@ func (p *Parameters) UnitConversionOut() {
 	p.UphillBreak.BreakDuration *= sec2min
 
 	p.PowerAcceMinPros *= 100
+	p.PowerAcceCoef  *= 100
+	p.PowerDeceCoef  *= 100
+	
 	p.VelLimitGrade *= 100
 	p.VerticalUpGrade *= 100
 	p.Filter.InitialRelGrade *= 100
