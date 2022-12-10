@@ -36,7 +36,8 @@
     "limitTurnSpeeds": false,
     "turnFrictionCoef": 0.15,
     "filter": {
-        "rounds": 2,
+        "rounds": 1,
+        "backsteps": 8,
         "minSegmentDist": 2
     }
 }

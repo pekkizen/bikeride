@@ -1,6 +1,6 @@
 {
     "GPXdir": "./gpx/",
-    "GPXfile": "",
+    "GPXfile": "cazalla2.gpx",
     "resultDir": "./results/",
     "routeCSV": true,
     "resultCSV": true,
@@ -25,14 +25,12 @@
     "temperature (C)": 25,
     "filter": {
         "rounds": 1,
-        "backstepRounds": 4,
         "interpolateDist": 25,
         "interpolateSumDist": 100,
         "initialRelativeGrade": 7,
         "minRelativeGrade": 0.1,
         "maxFilteredElevation": 12,
-        "backstepDist": 200,
-        "backsteps": 10,
+        "backsteps": 5,
         "levelFactor": 0.5,
         "levelMin": 1,
         "levelMax": 5,
@@ -48,11 +46,11 @@
     "minLimitedSpeed (km/h)": 7.2,
     "limitEntrySpeeds": false,
     "minSpeed (km/h)": 3,
-    "singleStepBraking": false,
-    "accelerationPowerFactor": 1.25,
+    "singleStepBraking": true,
+    "accelerationPower (%)": 120,
+    "decelerationPower (%)": 80,
     "minAccelerationPower (%)": 50,
-    "decelerationPowerFactor": 0.80,
-    "decelerationSpeedFactor": 0.5,
+    "deceFreeWheelCutoff": 0.5,
     "powermodel": {
         "powerModel": 1,
         "flatPower (w)": 100,
@@ -72,12 +70,11 @@
         "downhillTailwindPower (%)": 5
     },
     "diffCalc": 1,
-    "deltaVel": 0.5,
-    "deltaTime": 0.75,
-    "velSolver": 1,
+    "deltaVel": 0.4,
+    "deltaTime": 1,
+    "velSolver": 2,
     "useVelTable": false,
     "velTolerance": 0.05,
     "velBracket": 0.5,
-    "calcVelError": false,
-    "minPower": 1
+    "calcVelError": false
 }
