@@ -1,0 +1,126 @@
+Route name       		 cordoba
+Parameter file   		 ride.json
+Route GPX file   		 cordoba.gpx
+
+Environment
+	Wind course (deg)   	 40
+	Wind speed (m/s)    	0.0
+	Route course (deg)  	 251
+	Mean elevation (m)  	 84
+	Temperature (C)     	 24.5		at mean elevation
+	Air density (kg/m^3)	 1.175		at mean elevation
+	Base elevation (m)  	0
+	Temperature (C)     	 25.0		at base elevation
+	Air pressure        	 1013.25	at base elevation
+
+Filtering
+	GPX elevation (m)  	 520
+	Interpolated (m)   	 14
+	Levelled (m)       	 79
+	Filtered %         	 17.9
+	Filtering rounds   	 2
+	Interpolations     	 44
+	Levelations        	 135
+
+Elevation (m) 
+	Up               	 427
+	Down             	 511
+	Up by momentum   	 56
+
+Road segments         		 899
+	Track points dropped  	 4
+	Length (m) 	  
+	  Mean                	 88.6
+	  Median              	 54.1	(approx.)
+	  Max                 	 873.2
+	  Min                 	 3.0
+	Grade (%) 	  
+	  Max                  	 11.2
+	  Min                  	-11.8
+	  Grade sign change %  	 1.0
+
+Distance (km)    		 79.7
+	Direct           	 67.3
+	Uphill   > 4%    	 3.1
+	Downhill <-4%    	 3.1
+	Flat   -1%-1%    	 53.3
+	Braking light    	 0.2
+	Braking heavy    	 0.2
+	Freewheeling     	 9.4
+
+Speed (km/h)
+	Mean                 	 18.65
+	Max                  	 53.39
+	Min                  	 4.66
+	Downhill <-4% mean   	 34.50
+	Down vertical (m/h)  	 2182
+
+Driving time (h)       		 4.27
+	From target speeds     	 4.29
+	Over 90% uphill power  	 0.25
+	Over flat power        	 2.02
+	Pedal powered          	 3.95
+	Braking                	 0.01
+
+Energy rider (Wh)    		 365
+	From target powers (Wh)	 358
+	Food (kcal)          	 1309
+	Bananas (pcs)        	 12
+	Fat (g)              	 152
+	Average power (W)    	 86
+
+Rider's energy usage 		  Wh	 %
+	Gravity up          	 102 	28.0
+	Air resistance      	 134 	36.8
+	Rolling resistance  	 110 	30.2
+	Drivetrain loss     	 18 	5.0
+	Energy net sum      	-0.0
+	Acceleration        	 22	(included above)
+
+Rider/riding
+	Total weight (kg)          	 95
+	Flat speed (km/h)          	 20.00
+	Flat power (W)             	 90
+	Air drag coefficient CdA   	 0.49
+	Uphill power (W)           	 150
+	Vertical speed up (m/h)    	 493
+	Uphill power speed (km/h)  	 7.2
+	Uphill power grade (%)     	 6.8
+	Uphill power max grade (%)	 17.9	(3.0km/h)
+	Max pedalled speed (km/h) 	 25.0
+	Min pedalled grade (%)    	-2.19
+	Downhill power grade (%)  	-1.73
+	Downhill power (%)        	 20.0
+	Downhill power speed (km/h)	 23.5
+	Braking distance (m)    	 30
+	Downhill (-6%) max speed	 44.9
+
+Total energy balance (Wh)
+	Rider               	 365
+	Drivetrain loss     	-18
+	Kinetic resistance  	-51.5
+	Kinetic push        	 50.5
+	Gravity up          	-110
+	Gravity down        	 132
+	Air resistance      	-215
+	Air braking         	-4
+	Wind push           	0
+	Rolling resistance  	-144
+	Braking             	-5
+	Energy net sum      	-0.0
+
+Calculation
+	Segment energy mean error (J)     	-0.06
+	Segment energy mean abs(error) (J)	 1.40
+	Mean latitude (deg)                	 37.71
+	Local gravity                      	 9.800
+	Stepping velocity de/increments
+	Acce/decelaration steps (mean)    	 2.55
+	Single step segments (%)          	 32.6
+
+	Velocity solver: Newton-Raphson
+	  Iterations (mean)           	 1.86
+	  Iterations (max)            	 3
+	  calls solver                	 782
+	Calls freewheeling speed      	 117
+	Calls power from speed        	 1358
