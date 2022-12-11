@@ -14,7 +14,6 @@
     },
     "airDragCoef CdA": -1,
     "drivetrainLoss (%)": 5,
-    "brakingFrictionCoef": 0.3,
     "rollingResistanceCoef": 0.007,
     "powermodel": {
         "flatPower (w)": 90,
@@ -30,14 +29,9 @@
         "climbDuration (min)": 0,
         "breakDuration (min)": 5
     },
-    "limitDownSpeeds": true,
-    "verticalDownSpeed (m/h)": -1,
-    "brakingDist (m)": 30,
-    "limitTurnSpeeds": false,
-    "turnFrictionCoef": 0.15,
     "filter": {
-        "rounds": 1,
-        "backsteps": 8,
-        "minSegmentDist": 2
+        "rounds": 2,
+        "backsteps": 5,
+        "minSegmentDist": 3
     }
 }
