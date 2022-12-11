@@ -1,6 +1,6 @@
 {
     "GPXdir": "./gpx/",
-    "GPXfile": "cazalla2.gpx",
+    "GPXfile": "",
     "resultDir": "./results/",
     "routeCSV": true,
     "resultCSV": true,
