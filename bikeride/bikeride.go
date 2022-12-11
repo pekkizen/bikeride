@@ -223,33 +223,3 @@ func cpuProfile(res *route.Results, rou *route.Route, gpxs *gpx.GPX,
 	prof.Stop()
 }
 
-// const le = "\r\n"
-const le = "\n"
-const version = "Bikeride v0.97"
-const copyright = "Copyright 2019 The Bikeride Authors. All rights reserved."
-const licnote = "Use of " + version + " is governed by a license. Run bikeride -lic to read it."
-
-// const licFile = "LICENSE"
-// const written = le+le+"This file was written by "+ version
-
-const lictext = le + "Copyright (c) 2019 The Bikeride Authors. All rights reserved." +
-	le + le + "Redistribution and use of " + version + " binary code and documentation, " +
-	le + "without modification, and parameter json files, with or without modification," +
-	le + "is permitted, provided that the following condition is met:" +
-	le + le + "    *Products or services using " + version + " binary code must reproduce" +
-	le + "     the above copyright notice and the following disclaimer."
-
-const disclaimer = le + le + "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS" +
-	le + "\"" + "AS IS" + "\"" + " AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT" +
-	le + "LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR" +
-	le + "A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT" +
-	le + "OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL," +
-	le + "SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT" +
-	le + "LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE," +
-	le + "DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY" +
-	le + "THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT" +
-	le + "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE" +
-	le + "OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. "
-
-const golicense = le + le + version + " is written in Go and Go standard library with license" +
-	le + "https://golang.org/LICENSE\n "
