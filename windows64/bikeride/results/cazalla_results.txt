@@ -1,0 +1,137 @@
+Route name       		 cazalla
+Ride parameters  		 ride.json
+Configuration    		 config.json
+Route GPX file   		 cazalla.gpx
+
+Environment
+	Wind course (deg)       	 180
+	Wind speed (m/s)        	 10.0
+	Route course (deg)      	 50
+	Mean elevation (m)      	 493
+	    temperature (C)     	 16.8
+	    air density (kg/m^3)	 1.149
+	Base elevation (m)      	 0
+	    temperature (C)     	 20.0
+	    air density (kg/m^3)	 1.204
+	    air pressure        	 1013.25
+
+Filtering
+	GPX elevation up (m)  	 1821
+	GPX elevation down (m)	 1836
+	Filterable (m)        	 1426
+	Filtered (m)          	 567
+	    % filterable      	 39.8
+	    % up GPX          	 31.1
+	    % down GPX        	 30.9
+	Interpolate rounds    	 2
+	Interpolations        	 1850
+	Relative grade SD     	 2.12
+
+Elevation (m) 
+	Up               	 1254
+	Down             	 1269
+	Max              	 738
+	Min              	 328
+	Up by momentum   	 144
+
+Road segments         		 2041
+	Track points dropped  	 0
+	Length (m) 	  
+	  mean                	 33.9
+	  median              	 19.5	(approx.)
+	  max                 	 1700.1
+	  min                 	 3.0
+	Grade (%) 	  
+	  max                  	 18.7
+	  min                  	-19.4
+
+Distance (km)    		 69.3
+	Direct           	 46.4
+	Uphill   >  4%   	 12.1
+	Downhill < -4%   	 12.7
+	Flat   -1% - 1%  	 13.8
+	Braking          	 9.6
+	Freewheeling     	 18.5
+
+Speed (km/h)
+	Mean                 	 16.17
+	Max                  	 44.32
+	Min                  	 3.55
+	Downhill < -4% mean  	 28.88
+	Down vertical (m/h)  	 2069
+
+Driving time (h)       		 4.28
+	From target speeds     	 4.31
+	Pedal powered          	 3.34
+	Braking                	 0.29
+	Freewheeling           	 0.65
+	Over 90% uphill power  	 1.02
+	Over flat ground power 	 2.51
+
+Energy rider (Wh)          		 407
+	From target powers (Wh)  	 408
+	Food (kcal)              	 1459
+	Bananas (pcs)            	 13
+	Lard (g)                 	 170
+	Average power (W)        	 102
+	Energy/distance (Wh/km)  	 5.88
+
+Rider's energy usage 		  Wh	 %
+	Gravity up          	 270  	66.4
+	Air resistance      	 51  	12.6
+	Rolling resistance  	 61  	15.0
+	Drivetrain loss     	 24  	6.0
+	Energy net sum      	-0.1
+	Acceleration        	 24  	(included above)
+
+Rider/riding
+	Total weight (kg)          	 95
+	Flat ground speed (km/h)   	 20.00
+	Flat ground power (W)      	 100
+	Air drag coefficient CdA   	 0.59
+	Uphill power (W)           	 160
+	Vertical speed up (m/h)    	 518
+	Uphill power speed (km/h)  	 7.0
+	Uphill power grade (%)     	 7.5
+	Uphill power max grade (%)	 19.0	(3.0 km/h)
+	Max pedaled speed (km/h)  	 25.0
+	Min pedaled grade (%)     	-2.45	(25.0 km/h)
+	Downhill power grade (%)  	-1.93
+	Downhill power (%)        	 20.0
+	Downhill power speed (km/h)	 23.5
+	Braking distance (m)    	 30
+	Downhill (-6%) max speed	 40.4
+
+Total energy balance (Wh)
+	Rider               	 407
+	Drivetrain loss     	-24
+	Kinetic resistance  	-132.3
+	Kinetic push        	 130.9
+	Gravity up          	-324
+	Gravity down        	 328
+	Air resistance      	-128
+	    pedaling     	-70
+	    freewheeling 	-44
+	    braking      	-14
+	Wind push           	 50
+	Rolling resistance  	-125
+	Braking             	-182
+	Energy net sum      	-0.0
+
+Calculation
+	Segment energy mean error (J)     	-0.03
+	Segment energy mean abs(error) (J)	 1.18
+	Joule waste bin (J)               	 0.00
+	Mean latitude (deg)                	 38.10
+	Local gravity                      	 9.799
+
+	Stepping velocity de/increments
+	  steps per road segment (mean)	 2.21
+	  single step segments (%)     	 39.0
+
+	Velocity solver: Quadratic interpolation
+	  function evaluations (mean)	 0.00
+	  calls solver                	 1273
+
+	Calls freewheeling speed      	 919
+	Calls power from speed        	 3681

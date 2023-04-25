@@ -1,0 +1,62 @@
+{
+    "windCourse (deg)": 180,
+    "windSpeed (m/s)": 10,
+    "temperature (C)": 20,
+    "baseElevation": 0,
+    "airPressure (hPa)": -1,
+    "airDensity (rho)": -1,
+    "airDragCoef CdA": -1,
+    "drivetrainLoss (%)": 6,
+    "rollingResistance": 0.007,
+    "weight (kg)": {
+        "rider": 70,
+        "bike": 15,
+        "luggage": 10,
+        "total": -1,
+        "wheels": 2.5
+    },
+    "powermodel": {
+        "flatGroundPower (w)": 100.0,
+        "flatGroundSpeed (km/h)": 20,
+        "uphillPower (w)": 160,
+        "verticalUpSpeed (m/h)": -1,
+        "uphillPowerSpeed (km/h)": 7,
+        "uphillPowerGrade": -1,
+        "maxPedaledSpeed (km/h)": 25,
+        "tailWindPower (%)": 75,
+        "sysTailwind (m/s)": -5,
+        "headWindPower (%)": 125,
+        "sysHeadwind (m/s)": 5
+    },
+    "uphillBreaks": {
+        "powerLimit (%)": 90,
+        "climbDuration (min)": 20,
+        "breakDuration (min)": 0
+    },
+    "ride": {
+        "maxSpeed (km/h)": 80,
+        "minSpeed (km/h)": 3,
+        "limitDownSpeeds": true,
+        "minLimitedSpeed (km/h)": 8,
+        "verticalDownSpeed (m/h)": -1,
+        "brakingDistance (m)": 30,
+        "brakeRoadFriction": 0.25,
+        "limitTurnSpeeds": true,
+        "turnFriction": 0.15,
+        "limitEntrySpeeds": true,
+        "accelerationPower (%)": 125,
+        "minAccelerationPower (w)": 60,
+        "decelerationPower (%)": 85
+    },
+    "filter": {
+        "minSegmentDistance": 2,
+        "distInterpolationGrade": 2,
+        "interpolateSumDist": 175,
+        "interpolateBackstepRounds": 2,
+        "interpolateBacksteps": 2,
+        "initialRelativeGrade": 8,
+        "smoothingWeight": 0,
+        "levelFactor": 0.0,
+        "maxAcceptedGrade": 20
+    }
+}
