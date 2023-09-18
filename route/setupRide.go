@@ -1,0 +1,179 @@
+package route
+
+import (
+	"motion"
+)
+
+type ratioGenerator interface {
+	Ratio(grade, wind float64) (ratio float64)
+}
+
+func (o *Route) SetupRide(c *motion.BikeCalc, power ratioGenerator, p par) error {
+
+	setIntegralFunction(p.IntegralType) // select deltaVel, deltaTime or deltaDist stepping
+	c.SetMinPower(powerTOL)             // tell Calculator to use the same min power tolerance
+
+	if p.UseVelTable {
+		if ok := setupTargetVelTable(c, power, p); !ok {
+			return errNew(" SetupRide: setupTargetVelTable failed")
+		}
+	}
+	var (
+		r    = o.route
+		s    = &r[o.segments+1]
+		next *segment
+	)
+	s.vEntryMax = p.Ride.MaxSpeed
+
+	for i := o.segments; i > 0; i-- {
+		next, s = s, &r[i]
+
+		c.SetGrade(s.grade)
+		c.SetWind(s.wind)
+
+		if e := s.targetVelAndPower(c, p, power); e != nil {
+			return e
+		}
+		s.setMaxVel(o, c, p, next)
+		s.adjustTargetVelByMaxVel(c)
+	}
+	return nil
+}
+
+func setIntegralFunction(i int) {
+	switch i {
+	default:
+		acceDecelerate = (*segment).acceDeceVel
+	case 2:
+		acceDecelerate = (*segment).acceDeceDist
+	case 3:
+		acceDecelerate = (*segment).acceDeceTime
+	}
+}
+
+func (s *segment) targetVelAndPower(c *motion.BikeCalc, p par, power ratioGenerator) (err error) {
+	var (
+		vel = -1.0
+		ok  = false
+	)
+	s.vFreewheel = c.VelFreewheeling()
+
+	if s.vFreewheel > p.Powermodel.MaxPedaledSpeed {
+		s.vTarget = s.vFreewheel
+		s.powerTarget = 0
+		return nil
+	}
+	if p.UseVelTable {
+		if vel, ok = s.velFromTable(c); ok {
+			s.vTarget = vel
+			s.powerTarget = c.PowerFromVel(vel)
+			s.adjustTargetVelByMaxPedaled(c, p)
+			return nil
+		}
+	}
+	powerTarget := p.Powermodel.FlatPower * power.Ratio(s.grade, s.wind)
+
+	if powerTarget < powerTOL {
+		powerTarget = 0
+	}
+	if s.vTarget, ok = c.VelFromPower(powerTarget, vel); !ok { // vel < 0 -> use adjusted previous vel
+		return errNew(" targetVelAndPower: velocity is not solvable" + c.Error())
+	}
+	s.powerTarget = powerTarget
+	s.adjustTargetVelByMaxPedaled(c, p)
+	return nil
+}
+
+func (s *segment) adjustTargetVelByMaxPedaled(c *motion.BikeCalc, p par) {
+	var (
+		maxPedaled = p.Powermodel.MaxPedaledSpeed
+		minSpeed   = p.Ride.MinSpeed
+	)
+	if s.powerTarget == 0 && s.vTarget > maxPedaled {
+		return
+	}
+	if s.vTarget < minSpeed {
+		s.vTarget = minSpeed
+		s.powerTarget = c.PowerFromVel(minSpeed)
+		return
+	}
+	if s.powerTarget > 0 && s.vTarget <= maxPedaled {
+		return
+	}
+	// s.powerTarget > 0 && s.vTarget > maxPedaled
+	// vTarget is on the wrong side of MaxPedaledSpeed
+	s.vTarget = maxPedaled
+	s.powerTarget = c.PowerFromVel(maxPedaled)
+
+	if s.powerTarget < powerTOL {
+		s.powerTarget = 0
+		s.vTarget = s.vFreewheel
+	}
+}
+
+func (s *segment) setMaxVel(o *Route, c *motion.BikeCalc, p par, next *segment) {
+	const (
+		turnGradeLim = 0.01
+		minBrakeDist = 10
+		noLimitDist  = 50
+	)
+	q := &p.Ride
+	vMax := q.MaxSpeed
+
+	if q.LimitDownSpeeds && s.grade < q.SpeedLimitGrade {
+		if vDown := s.downhillMaxVel(c, p); vMax > vDown {
+			vMax = vDown
+		}
+	}
+	if q.LimitTurnSpeeds && s.radius > 0 && s.grade < turnGradeLim {
+		if vTurn := c.VelFromTurnRadius(s.radius); vMax > vTurn {
+			vMax = vTurn
+		}
+	}
+	if vMax < q.MinLimitedSpeed {
+		vMax = q.MinLimitedSpeed
+	}
+	if q.LimitEntrySpeeds && (q.LimitDownSpeeds || q.LimitTurnSpeeds) {
+		brakeDist := max(minBrakeDist, s.dist*0.5)
+		s.vEntryMax = c.MaxEntryVel(brakeDist, vMax)
+		if vMax > next.vEntryMax && s.dist < noLimitDist {
+			vMax = next.vEntryMax
+			o.vMaxToNext++
+		}
+	}
+	s.vMax = vMax
+}
+
+func (s *segment) downhillMaxVel(c *motion.BikeCalc, p par) float64 {
+	q := &p.Ride
+
+	if q.BrakingDist > 0 {
+		dist := q.BrakingDist
+		if s.grade < q.SteepDownhillGrade { // For steep downhills shorten braking distance?
+			dist *= q.SteepDownhillGrade / s.grade
+		}
+		return c.MaxBrakeStopVel(dist)
+	}
+	if q.VerticalDownSpeed > 0 {
+		speed := q.VerticalDownSpeed
+		if s.grade < q.SteepDownhillGrade {
+			speed *= q.SteepDownhillGrade / s.grade
+		}
+		return (speed / -s.grade) * mh2ms
+	}
+	return q.MaxSpeed
+}
+
+func (s *segment) adjustTargetVelByMaxVel(c *motion.BikeCalc) {
+
+	if s.vTarget < s.vMax-0.01 {
+		return
+	}
+	if s.vTarget < s.vMax {
+		//increasing vTarget -> positive powers over MaxPedaledSpeed
+		s.vMax = s.vTarget
+		return
+	}
+	s.vTarget = s.vMax
+	s.powerTarget = c.PowerFromVel(s.vMax)
+}
