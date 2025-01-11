@@ -80,7 +80,7 @@ func (p *Parameters) WriteJSON(writer io.WriteCloser) error {
 
 func (p *Parameters) setSystemDefaultValues() {
 
-	r := &p.Ride
+	// r := &p.Ride
 	q := &p.Powermodel
 	f := &p.Filter
 	u := &p.UphillBreak
@@ -95,33 +95,33 @@ func (p *Parameters) setSystemDefaultValues() {
 	p.Logfile = "log.txt"
 	p.LogMode = -1
 	p.LogLevel = -1
-	p.UseCR = true
-	p.CSVuseTab = false
+	p.UseCR = false
+	p.CSVuseTab = true
 	p.Display = true
 	p.CheckParams = true
 	p.ReportTech = false
 	p.GPXuseXMLparser = false
 	p.GPXignoreErrors = true
 
-	f.MinSegDist = 3
+	// f.MinSegDist = 3
 	f.DistFilterTol = -1
-	f.DistFilterDist = 180
-	f.IpoRounds = -1
-	f.Backsteps = 2
-	f.IpoDist = 60
-	f.IpoSumDist = 180
-	f.InitialRelGrade = 7
-	f.MinRelGrade = 0.01
+	f.DistFilterDist = -1
+	// f.IpoRounds = -1
+	// f.Backsteps = 2
+	// f.IpoDist = 60
+	// f.IpoSumDist = 180
+	// f.InitialRelGrade = 7
+	// f.MinRelGrade = 0.01
 	f.LevelFactor = -1
 	f.LevelMax = 4
 	f.LevelMin = 1
 	f.SmoothingWeight = -1
-	f.SmoothingDist = -1
-	f.MaxAcceptedGrade = -1
+	f.SmoothingWeightDist = -1
+	// f.MaxAcceptedGrade = -1
 
 	q.PowermodelType = 1
-	q.TailWindPower = 75
-	q.HeadWindPower = 125
+	q.TailWindPower = 85
+	q.HeadWindPower = 115
 	q.SysTailwind = -5
 	q.SysHeadwind = 5
 	q.ExpDownhill = 2
@@ -137,31 +137,31 @@ func (p *Parameters) setSystemDefaultValues() {
 	q.CDT = 1
 	q.CDH = 1
 
-	r.MaxSpeed = 80
-	r.LimitTurnSpeeds = false
-	r.LimitDownSpeeds = true
-	r.LimitExitSpeeds = false
-	r.MinLimitedSpeed = 8
-	r.MinSpeed = -1
-	r.SteepDownhillGrade = -12
-	r.PowerAcce = 125
-	r.PowerAcceMin = 50
-	r.PowerDece = 85
-	r.VelDeceLim = 50
-	r.SpeedLimitGrade = -1
+	// r.MaxSpeed = 80
+	// r.LimitTurnSpeeds = false
+	// r.LimitDownSpeeds = true
+	// r.LimitExitSpeeds = false
+	// r.MinLimitedSpeed = 8
+	// r.MinSpeed = -1
+	// r.SteepDownhillGrade = -12
+	// r.PowerAcce = 125
+	// r.PowerAcceMin = 50
+	// r.PowerDece = 85
+	// r.VelDeceLim = 50
+	// r.SpeedLimitGrade = -1
 
 	u.PowerLimit = 90
 	u.ClimbDuration = 0
 	u.BreakDuration = 0
 
-	p.DeltaVel = 0.4
-	p.DeltaTime = 1
-	p.IntegralType = 1
-	p.VelSolver = 1
-	p.VelTol = 0.05
-	p.Bracket = 0.5
+	p.AcceStepMode = -1
+	p.DeltaVel = -1
+	p.DeltaTime = -1
+	p.VelSolver = -1
+	p.VelTol = -1
+	p.Bracket = -1
 	p.VelErrors = false
-	p.UseVelTable = false
+	// p.UseVelTable = false
 
 }
 
@@ -172,7 +172,7 @@ type attributes struct {
 	notGiven float64
 }
 
-const mustGiven = 1.0 / 7
+const mustGiven = 0.18471183528821574770795166386961
 
 type attributesMap map[string]attributes
 
@@ -209,9 +209,9 @@ func setParamRanges() attributesMap {
 	m.put("windSpeed", -10, 10, "m/s", mustGiven)
 	m.put("airDensity", 0.72, 1.5, "", -1)
 	m.put("gravity", 9.780, 9.833, "", -1)
-	m.put("temperature", -25, 45, "deg C", mustGiven)
+	m.put("temperature", -25, 50, "deg C", mustGiven)
 	m.put("airPressure", 950, 1085, "hPascals", -1)
-	m.put("baseElevation", 0, 5000, "m", mustGiven)
+	m.put("baseElevation", 0, 5000, "m", -1)
 
 	// Powermodel
 	m.put("flatGroundSpeed", 10, 60, "km/h", -1)
@@ -234,8 +234,8 @@ func setParamRanges() attributesMap {
 	m.put("downhillTailwindPower", 1, 20, "%", -1)
 
 	// Bike
-	m.put("rollingResistanceCoef", 0.001, 0.02, "", mustGiven)
-	m.put("brakeRoadFriction", 0.1, 1, "", mustGiven)
+	m.put("rollingResistanceCoef", 0.0001, 0.04, "", -1)
+	m.put("brakeRoadFriction", 0.05, 1, "", mustGiven)
 	m.put("turnFrictionCoef", 0.05, 0.5, "", mustGiven)
 	m.put("airDragCoef CdA", 0.001, 1.5, "", -1)
 	m.put("drivetrainLoss", 0, 20, "%", mustGiven)
@@ -249,34 +249,38 @@ func setParamRanges() attributesMap {
 	m.put("accelerationPower", 105, 150, "%", mustGiven)
 	m.put("minAccelerationPower", 0, 200, "w", -1)
 	m.put("keepEntrySpeed", 1, 25, "%", -1)
-	m.put("deceFreewheelPowerIn", 0, 100, "", mustGiven)
+	m.put("velDeceLim", 0, 100, "", mustGiven)
 
 	// uphill breaks
-	m.put("uphillBreak.powerLimit", 75, 95, "%", 0)
-	m.put("uphillBreak.breakDuration", 1, 20, "min", 0)
-	m.put("uphillBreak.climbDuration", 5, 60, "min", 0)
+	m.put("uphillBreak.powerLimit", 75, 95, "%", -1)
+	m.put("uphillBreak.breakDuration", 1, 20, "min", -1)
+	m.put("uphillBreak.climbDuration", 5, 60, "min", -1)
 
 	//Filter
 	m.put("filter.minSegmentDist", 1, 100, "m", -1)
+
 	m.put("filter.levelFactor", 0.1, 1, "", -1)
 	m.put("filter.levelMax", 1, 30, "m", mustGiven)
 	m.put("filter.levelMin", 0.25, 5, "m", mustGiven)
+
 	m.put("filter.distInterpolationTol", 0.0, 50, "%", -1)
 	m.put("filter.distInterpolationDistance", 25, 300000, "m", mustGiven)
 	m.put("filter.interpolateSumDist", 50, 400, "m", mustGiven)
 	m.put("filter.interpolateDist", 5, 200, "m", mustGiven)
+
 	m.put("filter.maxAcceptedGrade", 5, 45, "%", -1)
+
 	m.put("filter.smoothingWeight", 0.05, 10000, "", -1)
-	m.put("filter.smoothingDistance", 5, 75, "", -1)
-	// m.put("filter.smoothingSquared", 0, 1, "", mustGiven)
+	m.put("filter.smoothingWeightDist", 5, 200, "", -1)
+
 	m.put("filter.interpolateRounds", 1, 100, "", -1)
-	m.put("filter.initialRelativeGrade", 2, 15, "", mustGiven)
+	m.put("filter.initialRelativeGrade", .1, 15, "", mustGiven)
 	m.put("filter.interpolateBacksteps", 0, 10, "", mustGiven)
 	m.put("filter.minRelativeGrade", 0.01, 3, "", mustGiven)
 
 	// calculation
-	m.put("velSolver", 1, 5, "", mustGiven)
-	m.put("acceStepMode", 1, 3, "", mustGiven)
+	m.put("velSolver", 1, 7, "", -1)
+	m.put("acceStepMode", 1, 3, "", -1)
 
 	return m
 }
@@ -319,7 +323,7 @@ func checkParamRanges(p *Parameters, m attributesMap, l logger) {
 	m.check(r.PowerDece, "decelerationPower", l)
 	m.check(r.PowerAcce, "accelerationPower", l)
 	m.check(r.PowerAcceMin, "minAccelerationPower", l)
-	m.check(r.VelDeceLim, "deceFreewheelPowerIn", l)
+	m.check(r.VelDeceLim, "velDeceLim", l)
 	m.check(r.MinSpeed, "minSpeed", l)
 	m.check(r.MaxSpeed, "maxSpeed", l)
 	m.check(r.MinLimitedSpeed, "minLimitedSpeed", l)
@@ -346,7 +350,7 @@ func checkParamRanges(p *Parameters, m attributesMap, l logger) {
 	m.check(f.MaxAcceptedGrade, "filter.maxAcceptedGrade", l)
 	m.check(f.SmoothingWeight, "filter.smoothingWeight", l)
 	if f.SmoothingWeight > 0 {
-		m.check(f.SmoothingDist, "filter.smoothingDistance", l)
+		m.check(f.SmoothingWeightDist, "filter.smoothingWeightDist", l)
 	}
 	m.check(float64(f.IpoRounds), "filter.interpolateRounds", l)
 	if f.IpoRounds > 0 {
@@ -358,7 +362,11 @@ func checkParamRanges(p *Parameters, m attributesMap, l logger) {
 	}
 	// calculation
 	m.check(float64(p.VelSolver), "velSolver", l)
-	m.check(float64(p.IntegralType), "acceStepMode", l)
+	m.check(float64(p.AcceStepMode), "acceStepMode", l)
+	// if p.AcceStepMode > 1 {
+	// 	p.DeltaVel = p.DeltaTime * 0.5
+
+	// }
 }
 
 func (p *Parameters) Check(l logger) error {

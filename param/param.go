@@ -28,40 +28,40 @@ type Parameters struct {
 }
 
 type filter struct {
-	IpoRounds        int     `json:"interpolateRounds"`
-	InitialRelGrade  float64 `json:"initialRelativeGrade (%)"`
-	MinRelGrade      float64 `json:"minRelativeGrade (%)"`
-	IpoSumDist       float64 `json:"interpolateSumDist (m)"`
-	IpoDist          float64 `json:"interpolateDist (m)"`
-	Backsteps        int     `json:"interpolateBacksteps"`
-	LevelFactor      float64 `json:"levelFactor"`
-	LevelMax         float64 `json:"levelMax (m)"`
-	LevelMin         float64 `json:"levelMin (m)"`
-	SmoothingWeight  float64 `json:"smoothingWeight"`
-	SmoothingDist    float64 `json:"smoothingDistance (m)"`
-	MaxAcceptedGrade float64 `json:"maxAcceptedGrade (%)"`
-	MinSegDist       float64 `json:"minSegmentDistance (m)"`
-	DistFilterTol    float64 `json:"distInterpolationTol (%)"`
-	DistFilterDist   float64 `json:"distInterpolationDistance (m)"`
+	IpoRounds           int     `json:"interpolateRounds"`
+	InitialRelGrade     float64 `json:"initialRelativeGrade (%)"`
+	MinRelGrade         float64 `json:"minRelativeGrade (%)"`
+	IpoSumDist          float64 `json:"interpolateSumDist (m)"`
+	IpoDist             float64 `json:"interpolateDist (m)"`
+	Backsteps           int     `json:"interpolateBacksteps"`
+	LevelFactor         float64 `json:"levelFactor"`
+	LevelMax            float64 `json:"levelMax (m)"`
+	LevelMin            float64 `json:"levelMin (m)"`
+	SmoothingWeight     float64 `json:"smoothingWeight"`
+	SmoothingWeightDist float64 `json:"smoothingWeightDist (m)"`
+	MaxAcceptedGrade    float64 `json:"maxAcceptedGrade (%)"`
+	MinSegDist          float64 `json:"minSegmentDistance (m)"`
+	DistFilterTol       float64 `json:"distInterpolationTol (%)"`
+	DistFilterDist      float64 `json:"distInterpolationDistance (m)"`
 }
 
-// IntegralType	= 1 stepping delta velocity
-// IntegralType	= 2 stepping delta distance
-// IntegralType	= 3 stepping delta time
+// AcceStepMode	= 1 stepping delta velocity
+// AcceStepMode	= 2 stepping delta distance
+// AcceStepMode	= 3 stepping delta time
 
 type calculation struct {
 	DeltaVel     float64 `json:"deltaVel"`
 	DeltaTime    float64 `json:"deltaTime"`
-	IntegralType int     `json:"acceStepMode"`
+	AcceStepMode int     `json:"acceStepMode"`
 	VelSolver    int     `json:"velSolver"`
 
-	VelTol      float64 `json:"velSolverTol"`
-	Bracket     float64 `json:"velSolverBracket"`
-	ReportTech  bool    `json:"reportTech"`
-	VelErrors   bool    `json:"reportVelErrors"`
-	UseVelTable bool    `json:"useVelTable"`
-	PowerIn     float64 // (100 - DrivetrainLoss) / 100
-	PowerOut    float64 // 1 / PowerIn
+	VelTol     float64 `json:"velSolverTol"`
+	Bracket    float64 `json:"velSolverBracket"`
+	ReportTech bool    `json:"reportTech"`
+	VelErrors  bool    `json:"reportVelErrors"`
+	// UseVelTable bool    `json:"useVelTable"`
+	PowerIn  float64 // (100 - DrivetrainLoss) / 100
+	PowerOut float64 // 1 / PowerIn
 }
 
 type filesEtc struct {
@@ -101,7 +101,7 @@ type ride struct {
 	PowerAcce      float64 `json:"accelerationPower (%)"`
 	PowerAcceMin   float64 `json:"minAccelerationPower (w)"`
 	PowerDece      float64 `json:"decelerationPower (%)"`
-	VelDeceLim     float64 `json:"deceFreewheelPowerIn (%)"`
+	VelDeceLim     float64 `json:"velDeceLim (%)"`
 	KeepEntrySpeed float64 `json:"keepEntrySpeed (%)"`
 	ReverseRoute   bool    `json:"reverseRoute"`
 	RoundTrip      bool    `json:"roundTrip"`
