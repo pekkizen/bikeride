@@ -3,25 +3,13 @@ package main
 import (
 	"strconv"
 
-	"bikeride/logerr"
-	"bikeride/param"
-	"bikeride/power"
-	"bikeride/route"
-	"motion"
-)
+	"github.com/pekkizen/bikeride/logerr"
+	"github.com/pekkizen/bikeride/param"
+	"github.com/pekkizen/bikeride/power"
+	"github.com/pekkizen/bikeride/route"
 
-func min(x, y float64) float64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-func max(x, y float64) float64 {
-	if x > y {
-		return x
-	}
-	return y
-}
+	"github.com/pekkizen/motion"
+)
 
 func ftoa(x float64, i int) string { return strconv.FormatFloat(x, 'f', i, 64) }
 
@@ -30,7 +18,7 @@ func setupSystem(c *motion.BikeCalc, m *power.Generator, p *param.Parameters,
 	l.SetPrefix("setup:      ")
 
 	setupCalculator(c, o, p)
-	if err := setupParameters(p, o, c, l); err != nil {
+	if err := setupParameters(p, c, l); err != nil {
 		return err
 	}
 	setupPowerModel(m, p)
@@ -49,13 +37,17 @@ func setupCalculator(c *motion.BikeCalc, o *route.Route, p *param.Parameters) {
 	c.SetCcf(b.Ccf)
 	c.SetWeightRotating(b.Weight.Rotating)
 	c.SetWeight(b.Weight.Total)
-	c.SetTolNR(p.NRtol)
+	c.SetVelTol(p.VelTol)
 	c.SetBracket(p.Bracket)
 	c.SetVelErrors(p.VelErrors)
-	if p.VelSolver > 4 {
-		p.VelSolver = 1
-	}
+	// if p.VelSolver < 1 {
+	// 	p.VelSolver = motion.Householder3Method
+	// 	if p.Environment.WindSpeed > motion.Householder3WindLimit {
+	// 		p.VelSolver = motion.NewtonRaphsonMethod
+	// 	}
+	// }
 	c.SetVelSolver(p.VelSolver)
+	p.VelSolver = c.SolverFunc()
 
 	gravity := e.Gravity
 	if gravity <= 0 {
@@ -77,12 +69,15 @@ func setupCalculator(c *motion.BikeCalc, o *route.Route, p *param.Parameters) {
 	if e.AirPressure > 0 {
 		c.SetAirPressure(e.AirPressure)
 	}
+	e.AirPressure = c.AirPressure()
+	if e.BaseElevation < 0 {
+		e.BaseElevation = 0
+	}
 	c.SetBaseElevation(e.BaseElevation)
 	c.SetTemperature(e.Temperature)
 	// RhoFromEle uses base elevation, temperature, air pressure and gravity
 	// to calculate air density and temperature at elevation EleMean.
 	o.Rho, o.Temperature = c.RhoFromEle(o.EleMean)
-	e.AirPressure = c.AirPressure()
 	c.SetRho(o.Rho)
 }
 
@@ -103,37 +98,55 @@ func setupPowerModel(m *power.Generator, p *param.Parameters) {
 	if q.DownhillHeadwindPower > 0 {
 		m.PowerDownHeadRatio(q.DownhillHeadwindPower / 100)
 	}
-	m.CUT(q.CUT)
-	m.CUH(q.CUH)
-	m.CDT(q.CDT)
-	m.CDH(q.CDH)
+	if q.CUT > 0 {
+		m.CUT(q.CUT)
+	}
+	if q.CDT > 0 {
+		m.CDT(q.CDT)
+	}
+	if q.CUH > 0 {
+		m.CUH(q.CUH)
+	}
+	if q.CDT > 0 {
+		m.CDT(q.CDT)
+	}
+	if q.CDH > 0 {
+		m.CDH(q.CDH)
+	}
 	m.PowerModelType(q.PowermodelType)
 	m.Setup() //must be done
 }
 
-func setupParameters(p *param.Parameters, o *route.Route, c *motion.BikeCalc, l *logerr.Logerr) error {
+func setupParameters(p *param.Parameters,
+	c *motion.BikeCalc, l *logerr.Logerr) error {
 
+	if p.DeltaVel < 0 {
+		p.DeltaVel = 0.5
+	}
+	if p.DeltaTime < 0 {
+		p.DeltaTime = 0.5
+	}
 	p.DeltaVel = min(2, max(0.0001, p.DeltaVel))
 	p.DeltaTime = min(3, max(0.0001, p.DeltaTime))
-
-	if p.IntegralType < 1 || p.IntegralType > 3 {
-		p.IntegralType = 1
+	if p.AcceStepMode < 1 {
+		p.AcceStepMode = 1
+	}
+	if p.AcceStepMode > 1 && p.DeltaVel > p.DeltaTime { // for braking to keep accuracy
+		p.DeltaVel = p.DeltaTime
 	}
 	if !p.Ride.LimitTurnSpeeds && !p.Ride.LimitDownSpeeds {
-		p.Ride.LimitEntrySpeeds = false
+		p.Ride.LimitExitSpeeds = false
 	}
 	if !p.ReportTech {
 		p.VelErrors = false
 	}
-	// c.SetWind(0)
-
 	if e := flatPowerSpeedCdA(p, c, l); e != nil {
 		return e
 	}
 	if e := uphillPowerGradeSpeed(p, c, l); e != nil {
 		return e
 	}
-	if e := maxPedaledSpeed(p, c, l); e != nil {
+	if e := maxPedaledSpeed(p, c); e != nil {
 		return e
 	}
 	q := &p.Powermodel
@@ -158,9 +171,9 @@ func setupParameters(p *param.Parameters, o *route.Route, c *motion.BikeCalc, l 
 		l.Err("uphillPowerSpeed", ftoa(q.UphillPowerSpeed*ms2kmh, 1), "< MinSpeed",
 			ftoa(p.Ride.MinSpeed*ms2kmh, 1))
 	}
-	if q.MaxPedaledSpeed < q.FlatSpeed+(2.0/3.6) {
-		l.Err("maxPedalledSpeed", ftoa(q.MaxPedaledSpeed*ms2kmh, 1), "< flatSpeed + 2 =",
-			ftoa(2+q.FlatSpeed*ms2kmh, 1), "km/h")
+	if q.MaxPedaledSpeed < q.FlatSpeed {
+		l.Err("maxPedalledSpeed", ftoa(q.MaxPedaledSpeed*ms2kmh, 1), "< flatSpeed",
+			ftoa(q.FlatSpeed*ms2kmh, 1), "km/h")
 	}
 	if l.Errors() > 0 {
 		return l.Errorf(" ")
@@ -185,8 +198,8 @@ func uphillPowerGradeSpeed(p *param.Parameters, c *motion.BikeCalc, l *logerr.Lo
 		q.UphillPowerGrade = c.GradeFromVelAndPower(q.UphillPowerSpeed, q.UphillPower)
 
 	case q.UphillPowerGrade > 0:
-		c.SetGrade(q.UphillPowerGrade)
-		q.UphillPowerSpeed, _ = c.NewtonRaphson(q.UphillPower, 0, 3)
+		c.SetGradeExact(q.UphillPowerGrade)
+		q.UphillPowerSpeed, _ = c.NewtonRaphson(q.UphillPower, minTolNR, 3)
 
 	default:
 		return l.Errorf("uphillPowerSpeed <= 0 and uphillPowerGrade <= 0 ")
@@ -198,16 +211,24 @@ func flatPowerSpeedCdA(p *param.Parameters, c *motion.BikeCalc, l *logerr.Logerr
 	q := &p.Powermodel
 	b := &p.Bike
 	switch {
-	case q.FlatPower > 0 && q.FlatSpeed > 0 && b.CdA <= 0:
-		if b.CdA = c.CdAfromVelAndPower(q.FlatSpeed, q.FlatPower); b.CdA < 0.01 {
+	case q.FlatPower > 0 && q.FlatSpeed > 0 && b.Crr > 0 && b.CdA <= 0:
+		if b.CdA = c.CdAfromVelAndPower(q.FlatSpeed, q.FlatPower); b.CdA < 0.001 {
 			return l.Errorf("%s%4.3f",
 				"Not enough power for rolling resistance and proper CdA. CdA =", b.CdA)
 		}
 		c.SetCdA(b.CdA)
-	case q.FlatPower > 0:
+
+	case q.FlatPower > 0 && q.FlatSpeed > 0 && b.Crr <= 0 && b.CdA > 0:
+		if b.Crr = c.CrrFromVelAndPower(q.FlatSpeed, q.FlatPower); b.Crr <= 0 {
+			return l.Errorf("%s%4.3f",
+				"Not enough power for air resistance and proper Crr. Crr =", b.Crr)
+		}
+		c.SetCrr(b.Crr)
+
+	case q.FlatPower > 0 && b.Crr > 0 && b.CdA > 0:
 		q.FlatSpeed = c.FlatSpeed(q.FlatPower)
 
-	case q.FlatSpeed > 0:
+	case q.FlatSpeed > 0 && b.Crr > 0 && b.CdA > 0:
 		q.FlatPower = c.FlatPower(q.FlatSpeed)
 
 	default:
@@ -216,10 +237,10 @@ func flatPowerSpeedCdA(p *param.Parameters, c *motion.BikeCalc, l *logerr.Logerr
 	return nil
 }
 
-func maxPedaledSpeed(p *param.Parameters, c *motion.BikeCalc, l *logerr.Logerr) error {
+func maxPedaledSpeed(p *param.Parameters, c *motion.BikeCalc) error {
 	q := &p.Powermodel
 	const (
-		minGRADE    = -10.0 / 100.0
+		minGRADE    = -12.0 / 100.0
 		velDIFF     = 1.5 / 3.6
 		dhPowerPros = 20
 	)
@@ -229,7 +250,7 @@ func maxPedaledSpeed(p *param.Parameters, c *motion.BikeCalc, l *logerr.Logerr) 
 	downhillPower := q.FlatPower * q.DownhillPower / 100
 	// Now MaxPedaledSpeed > 0 must be given
 	// if P.MaxPedaledSpeed <= 0 {
-	// 	c.SetGrade(P.DownhillPowerGrade)
+	// 	c.SetGradeExact(P.DownhillPowerGrade)
 	// 	vel, _ := c.NewtonRaphson(downhillPower, 0, 8)
 	// 	P.MaxPedaledSpeed = vel + velDIFF
 	// 	p.MinPedaledGrade = c.GradeFromVelAndPower(P.MaxPedaledSpeed, 0)
@@ -238,8 +259,8 @@ func maxPedaledSpeed(p *param.Parameters, c *motion.BikeCalc, l *logerr.Logerr) 
 	q.MinPedaledGrade = c.GradeFromVelAndPower(q.MaxPedaledSpeed, 0)
 	if q.MinPedaledGrade < minGRADE {
 		q.MinPedaledGrade = minGRADE
-		c.SetGrade(q.MinPedaledGrade)
-		q.MaxPedaledSpeed = c.VelFreewheeling() //+ 0.001
+		c.SetGradeExact(q.MinPedaledGrade)
+		q.MaxPedaledSpeed = c.VelFreewheel() //+ 0.001
 	}
 	q.DownhillPowerGrade = c.GradeFromVelAndPower(q.MaxPedaledSpeed-velDIFF, downhillPower)
 	return nil
