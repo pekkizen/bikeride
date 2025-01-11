@@ -7,7 +7,7 @@ const (
 	simpleLinearModel      = 2
 	fullExponentialModel   = 3
 	fullLinearModel        = 4
-	useMathExp             = false
+	UseMathExp             = false
 )
 
 var ln = math.Log
@@ -58,8 +58,8 @@ func RatioGenerator() *Generator {
 		cDH: 1,
 		cUH: 1,
 
-		sysGradeUp:   0.06,
-		sysGradeDown: -0.025,
+		sysGradeUp:   0.08,
+		sysGradeDown: -0.02,
 		sysTailwind:  -5,
 		sysHeadwind:  5,
 
@@ -70,12 +70,12 @@ func RatioGenerator() *Generator {
 
 		powerDownRatio:     0.2,
 		powerTailRatio:     0.85,
-		powerHeadRatio:     1.25,
-		powerUpRatio:       1.75,
-		powerDownHeadRatio: 1,
+		powerHeadRatio:     1.15,
+		powerUpRatio:       1.70,
+		powerDownHeadRatio: 1.0,
 		powerDownTailRatio: 0.05,
 		powerModelType:     1,
-		powerMinRatio:      0.005,
+		powerMinRatio:      0.001,
 	}
 }
 
@@ -137,7 +137,8 @@ func (m *Generator) cutWind(grade, wind float64) float64 {
 // Uphill grade function fU = grade^0.75 gives quite linear power increase.
 func (m *Generator) initSimpleExponential() {
 
-	fU := math.Sqrt(m.sysGradeUp * math.Sqrt(m.sysGradeUp)) // grade^0.75
+	// fU := math.Sqrt(m.sysGradeUp * math.Sqrt(m.sysGradeUp)) // grade^0.75
+	fU := fU075(m.sysGradeUp) //up ~grade^0.75
 	m.βU = ln(m.powerUpRatio) / fU
 
 	fD := -(m.sysGradeDown * m.sysGradeDown)
@@ -166,7 +167,8 @@ func (m *Generator) simpleExponential(grade float64, wind float64) float64 {
 	var gU, gD, βX float64
 	switch {
 	case grade > 0:
-		gU = math.Sqrt(grade * math.Sqrt(grade)) //up grade^0.75
+		// gU = math.Sqrt(grade * math.Sqrt(grade)) // up grade^0.75
+		gU = fU075(grade) // approx. up grade^0.75
 		βX = m.βU * gU
 	case grade < 0:
 		gD = -grade * grade // down grade^2
@@ -185,7 +187,7 @@ func (m *Generator) simpleExponential(grade float64, wind float64) float64 {
 	if βX < m.logPowerMinRatio {
 		return 0
 	}
-	if useMathExp {
+	if UseMathExp {
 		return math.Exp(βX)
 	}
 	return fastExp(βX)
@@ -231,7 +233,6 @@ func (m *Generator) simpleLinear(grade, wind float64) (ratio float64) {
 		βX = m.βD * gD
 	}
 	switch {
-	case wind == 0:
 	case wind < 0:
 		βX += wind * (m.βT + m.βUT*gU + m.βDT*gD)
 	case wind > 0:
@@ -286,7 +287,6 @@ func (m *Generator) fullExponential(grade, wind float64) float64 {
 		βX = m.βD * gD
 	}
 	switch {
-	case wind == 0:
 	case wind < 0:
 		wind = -pow(-wind, m.expTailwind)
 		βX += wind * (m.βT + m.βUT*gU + m.βDT*gD)
@@ -300,7 +300,7 @@ func (m *Generator) fullExponential(grade, wind float64) float64 {
 	if βX < m.logPowerMinRatio {
 		return 0
 	}
-	if useMathExp {
+	if UseMathExp {
 		return math.Exp(βX)
 	}
 	return fastExp(βX)
@@ -360,9 +360,9 @@ func (m *Generator) fullLinear(grade, wind float64) float64 {
 // minimaxApprox(exp, -5, 2, degree=c(3,3))
 // $ObservedAbsError 0.0002340462
 
-// fastExp returns approx. exp(x) for x in [-5, 2]. Error < 2.5e-4.
-// This is ~6 x faster than math.Exp (math.archExp). Profiled in bikeride.
-func fastExp(x float64) float64 {
+// fastExp returns approx. exp(x) for x in [-5, 2]. Max error ~ 0.00025.
+// This is ~3 x faster than math.Exp (math.archExp).
+func fastExp(x float64) (z float64) {
 	const (
 		// a0 = +1.000009162
 		// changed to 1 -> fastExp(0) == 1. Very small acuracy lost.
@@ -373,7 +373,37 @@ func fastExp(x float64) float64 {
 		b2 = +0.11496513
 		b3 = -0.01017503
 	)
-	return (1 + x*(a1+x*(a2+x*a3))) / (1 + x*(b1+x*(b2+x*b3)))
+	z = (1 + x*(a1+x*(a2+x*a3))) / (1 + x*(b1+x*(b2+x*b3)))
+	return
+}
+
+// fn = function(x) x^0.75
+// minimaxApprox(fn, 0.005, 0.1, c(3))
+// 0.006923987   2.563897835 -14.621961493 61.316361623
+// $ObservedAbsError 0.0005825766
+// pow34X returns ~x^(3/4) for x in [0, 0.1]. Max error 0.00058
+func pow075(x float64) float64 {
+	const (
+		a0 = +0.006923987
+		a1 = +2.563897835
+		a2 = -14.621961493
+		a3 = +61.316361623
+	)
+	if x < 0.005 {
+		return math.Sqrt(x * math.Sqrt(x))
+	}
+	return a0 + x*(a1+x*(a2+x*a3))
+}
+
+// fU075 returns ~x^(3/4) for x in [0, 0.1].
+func fU075(x float64) float64 {
+	const (
+		// a0 = +0.002099753
+		a1 = +3.044942978
+		a2 = -25.397962088
+		a3 = +127.313264131
+	)
+	return x * (a1 + x*(a2+x*a3))
 }
 
 /*
@@ -405,8 +435,8 @@ func fastExp(x float64) float64 {
 */
 
 /*
-// fastExp returns approx. exp(x) for x < 1. Error < 1e-7.
-func fastExp(x float64) float64 {
+// fastExp2 returns approx. exp(x) for x < 1. Error < 1e-7.
+func fastExp2(x float64) float64 {
 	const (
 		a1 = 1.0 / 1024
 		a2 = 1.0 / (2 * 1024 * 1024)
@@ -439,6 +469,9 @@ func pow(x, y float64) float64 {
 		return math.Sqrt(x) * x
 	case 0.5:
 		return math.Sqrt(x)
+	case 2.0 / 3:
+		x = math.Cbrt(x)
+		return x * x
 	}
 	return math.Pow(x, y)
 }
@@ -516,6 +549,9 @@ func (m *Generator) PowerDownTailRatio(x float64) {
 // PowerUpRatio ----------
 func (m *Generator) PowerUpRatio(x float64) {
 	m.powerUpRatio = x
+}
+func (m *Generator) PowerMinpRatio(x float64) {
+	m.powerMinRatio = x
 }
 
 // CDT ------
