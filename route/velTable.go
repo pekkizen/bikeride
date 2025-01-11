@@ -3,9 +3,9 @@ package route
 import "github.com/pekkizen/motion"
 
 const (
-	gradeMax  = 16
-	gradeMin  = -7
-	windMax   = 6
+	gradeMax  = 15
+	gradeMin  = -5
+	windMax   = 5
 	tableGlim = gradeMax - gradeMin
 	tableWlim = 2 * windMax
 )
@@ -13,9 +13,8 @@ const (
 var velTable [tableGlim + 1][tableWlim + 1]float64
 
 // velFromTable interpolates velocity from precalculated grade x wind table.
-func velFromTable(grade, wind float64) (float64, bool) {
-
-	ok := true
+func velFromTable(c *motion.BikeCalc, grade, wind float64) (power, vel float64, ok bool) {
+	ok = true
 	wind += windMax
 	grade *= 100
 	grade -= gradeMin
@@ -42,7 +41,8 @@ func velFromTable(grade, wind float64) (float64, bool) {
 		ok = false
 	}
 	if !ok {
-		return velTable[g0][w0], false
+		return 0, velTable[g0][w0], false
+		// good velguess for the next function to start with.
 	}
 	grade -= float64(g0)
 	wind -= float64(w0)
@@ -55,14 +55,13 @@ func velFromTable(grade, wind float64) (float64, bool) {
 	v0 := v00 + wind*(v01-v00)
 	v1 := v10 + wind*(v11-v10)
 	const bias = 0.005
-
-	return v0 + grade*(v1-v0) - bias, true
+	vel = v0 + grade*(v1-v0) - bias
+	power = c.PowerFromVel(vel)
+	return
 }
 
 func fillTargetVelTable(c *motion.BikeCalc, power ratioGenerator, basePower float64) (ok bool) {
 	velguess := 10.0
-	c.SetVelTol(0.0005)
-
 	for g := gradeMin; g <= gradeMax; g++ {
 		grade := float64(g) * 0.01
 		c.SetGradeExact(grade)
@@ -73,9 +72,8 @@ func fillTargetVelTable(c *motion.BikeCalc, power ratioGenerator, basePower floa
 			c.SetWind(wind)
 
 			pow := basePower * power.Ratio(grade, wind)
-			vel, ok := c.VelFromPower(pow, velguess)
-
-			if !ok {
+			vel, iter := c.NewtonRaphson(pow, 0.1, velguess)
+			if iter == 0 {
 				return false
 			}
 			velguess = vel * 0.96
