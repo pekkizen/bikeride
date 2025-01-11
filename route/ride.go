@@ -13,7 +13,7 @@ var acceDecelerate func(*segment, *motion.BikeCalc, par)
 
 // Ride calculates the ride for the given parameters and route.
 func (o *Route) Ride(c *motion.BikeCalc, p par) {
-	prexit := 1.0 // must be > 0, start speed.
+	prexit := 3.0 // must be > 0, start speed.
 	for i := 1; i <= o.segments; i++ {
 		s := &o.route[i]
 
@@ -29,7 +29,7 @@ func (o *Route) Ride(c *motion.BikeCalc, p par) {
 		prexit = s.vExit
 		s.calcJoules(c)
 
-		o.TimeRider += s.time
+		o.Time += s.time
 		o.JouleRider += s.jouleRider
 	}
 }
@@ -38,16 +38,12 @@ func (s *segment) calcJoules(c *motion.BikeCalc) {
 
 	s.jouleGrav = -s.dist * c.Fgrav()
 	s.jouleRoll = -s.dist * c.Froll()
-	s.jouleKinetic = 0.5 * c.MassKin() * (s.vEntry*s.vEntry - s.vExit*s.vExit)
+	s.jouleKinetic = 0.5 * c.WeightKin() * (s.vEntry*s.vEntry - s.vExit*s.vExit)
 
 	// Powers are calculated over total segment time. Could also be
-	// calculated over timeRider (+timeFreewheel) and timeBraking.
-	if s.jouleRider > 0 {
-		s.powerRider = s.jouleRider / s.time
-	}
-	if s.timeBraking > 0 {
-		s.powerBraking = s.jouleBraking / s.time
-	}
+	// calculated over timeRider and timeBraking.
+	s.powerRider = s.jouleRider / s.time
+	s.powerBraking = s.jouleBrake / s.time
 }
 
 func (s *segment) ride(c *motion.BikeCalc, p par) {
@@ -101,6 +97,12 @@ func (s *segment) useConstantVel(c *motion.BikeCalc, p par) bool {
 	const (
 		maxSeconds = 20
 	)
+	// if s.vFreewheel >= s.vMax {
+	// 	return true
+	// }
+	if s.vExit > s.vExitMax { //!!!!!!!!!!
+		return false
+	}
 	dVel := math.Abs(s.vTarget - s.vEntry)
 
 	if dVel < sameVelTol {
@@ -137,13 +139,16 @@ func (s *segment) rideConstantVel(c *motion.BikeCalc) {
 		jouleDrag = -dist * c.Fdrag(vel)
 		power     = c.PowerFromVel(vel)
 	)
+	if s.vExit == s.vFreewheel {
+		power = 0
+	}
+	if math.Abs(power) < powerTol {
+		power = 0
+	}
 	s.calcSteps++
 	s.jouleDrag += jouleDrag
 	s.distLeft = 0
 	s.time += time
-	if math.Abs(power) < powerTOL {
-		power = 0
-	}
 	joulePower := time * power
 
 	switch {
@@ -151,12 +156,13 @@ func (s *segment) rideConstantVel(c *motion.BikeCalc) {
 		s.jouleRider += joulePower
 		s.timeRider += time
 		s.jouleDragRider += jouleDrag
+		s.distRider += dist
 		s.appendPath(ridingConstVel)
 
-	case power < 0 && vel >= s.vMax-sameVelTol:
-		s.jouleBraking += joulePower
-		s.timeBraking += time
-		s.distBraking += dist
+	case power < 0 && vel > s.vMax-1e-8:
+		s.jouleBrake += joulePower
+		s.timeBrake += time
+		s.distBrake += dist
 		s.jouleDragBrake += jouleDrag
 		s.appendPath(brakingConstVel)
 
@@ -166,11 +172,14 @@ func (s *segment) rideConstantVel(c *motion.BikeCalc) {
 		s.jouleDragFreewh += jouleDrag
 		s.appendPath(freewheelConstV)
 
-	default:
-		// Should not be here. Braking for s.vExit < s.vMax.
+	default: // braking under vMax
+		// if test {
+		// println("rideConstantVel",s.segnum, int(power+0.5), int(s.powerTarget+0.51),
+		// int(3.6*s.vTarget+0.5), int(3.6*vel+0.5), int(10000*s.grade+0.5), s.calcPath)
+		// }
 		s.jouleSink += joulePower
-		s.appendPath(1)
-		s.appendPath(1)
-		s.appendPath(2)
+		s.appendPath(5)
+		s.appendPath(5)
+
 	}
 }

@@ -7,7 +7,6 @@ import (
 )
 
 // New returns a Route struct with parsed latitude, longitude and elevation data from gpx.
-// Only 1st track's 1st segment of gpx is used.
 func New(gpx *gpx.GPX, p par) (*Route, error) {
 
 	tps := gpx.TrkpSlice()
@@ -20,7 +19,7 @@ func New(gpx *gpx.GPX, p par) (*Route, error) {
 	o := &Route{
 		route:      make(route, points+1),
 		trkpErrors: gpx.ErrCount(),
-		metersLon:  metersLon(tps[0].Lat),
+		metersLon:  metersLon(tps[0].Lat), // corrected to mean lat in setupRoad
 		metersLat:  metersLat(tps[0].Lat),
 
 		filter: filter{
@@ -37,8 +36,8 @@ func New(gpx *gpx.GPX, p par) (*Route, error) {
 			initRelgrade: f.InitialRelGrade,
 			minRelGrade:  f.MinRelGrade,
 
-			smoothingWeight: f.SmoothingWeight,
-			smoothingDist:   f.SmoothingDist,
+			smoothingWeight:     f.SmoothingWeight,
+			smoothingWeightDist: f.SmoothingWeightDist,
 
 			levelFactor: f.LevelFactor,
 			levelMax:    f.LevelMax,
@@ -65,7 +64,7 @@ func (o *Route) NewCopy(p *Route) {
 	copy(o.route, p.route)
 	o.JouleRider = 0
 	o.JriderTarget = 0
-	o.TimeRider = 0
+	o.Time = 0
 	o.TimeTarget = 0
 	o.filter.ipolations = 0
 	o.filter.levelations = 0
@@ -108,8 +107,8 @@ func (o *Route) importTrackPoints(tps []gpx.Trkpt) {
 				continue
 			}
 		}
-		// Road/route segments are indexed from 1 on. o.route[0]
-		// is not used. n track points creates n-1 road segments.
+		// Road/route segments are indexed from 1 on. o.route[0] is not used.
+		// n track points creates n-1 road segments.
 		seg++
 		s = &o.route[seg]
 		s.segnum = seg
@@ -126,5 +125,5 @@ func (o *Route) importTrackPoints(tps []gpx.Trkpt) {
 	o.LatMean = latMean / float64(seg)
 	o.distMean = distMean / float64(seg) // horisontal, not final, for median calc.
 	o.route = o.route[: seg+1 : seg+1]   // clip excess capacity, do not remove/change because
-	//                                   // len(o.route) = o.segments+2 is used later
+	//                                   // len(o.route)-2 = o.segments is used later
 }

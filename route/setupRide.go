@@ -5,21 +5,14 @@ import (
 )
 
 func (o *Route) SetupRide(c *motion.BikeCalc, power ratioGenerator, p par) error {
+	setAccelerationStepping(p.AcceStepMode)
+	c.SetMinPower(powerTol)
 
-	setAccelerationStepping(p.IntegralType) // select deltaVel, deltaTime or deltaDist stepping
-	c.SetMinPower(powerTOL)                 // tell Calculator to use the same min power tolerance
-
-	if p.UseVelTable {
-		if !fillTargetVelTable(c, power, p.Powermodel.FlatPower) {
-			return errNew(" SetupRide: fillTargetVelTable failed\n" + c.Error())
-		}
-	}
 	var (
 		s    = &o.route[o.segments+1]
 		next *segment
 	)
-	s.vMax = 1.0
-
+	s.vMax = 3.0
 	for i := o.segments; i > 0; i-- {
 		next, s = s, &o.route[i]
 
@@ -37,7 +30,6 @@ func (o *Route) SetupRide(c *motion.BikeCalc, power ratioGenerator, p par) error
 }
 
 func (s *segment) calcJoulesAndTimeFromTargets(o *Route) {
-
 	timeTarget := s.dist / s.vTarget
 	if s.powerTarget > 0 {
 		o.JriderTarget += timeTarget * s.powerTarget
@@ -47,16 +39,12 @@ func (s *segment) calcJoulesAndTimeFromTargets(o *Route) {
 
 func setAccelerationStepping(i int) {
 	switch i {
-
 	case stepVel: // 1
 		acceDecelerate = (*segment).acceDeceVel
-
 	case stepTime: // 2
 		acceDecelerate = (*segment).acceDeceTime
-
 	case stepDist: // 3
 		acceDecelerate = (*segment).acceDeceDist
-
 	default:
 		acceDecelerate = (*segment).acceDeceVel
 	}
@@ -64,33 +52,18 @@ func setAccelerationStepping(i int) {
 
 func (s *segment) setTargetVelAndPower(c *motion.BikeCalc, p par, power ratioGenerator) (err error) {
 	var (
-		ok  bool
-		vel = -1.0 //vel < 0 -> VelFromPower uses internal velguess function.
+		ok = false
+		q  = &p.Powermodel
 	)
-	if s.grade < -p.Bike.Crr { // if c.Fgr() < 0
-		s.vFreewheel = c.VelFreewheeling()
-		if s.vFreewheel > p.Powermodel.MaxPedaledSpeed {
-			s.vTarget = s.vFreewheel
-			s.powerTarget = 0
-			return nil
-		}
+	if s.grade < 0 && c.PowerFromVel(q.MaxPedaledSpeed) <= 0 {
+		s.vFreewheel = c.VelFreewheel()
+		s.vTarget = s.vFreewheel
+		s.powerTarget = 0
+		return nil
 	}
-	if p.UseVelTable {
-		if vel, ok = velFromTable(s.grade, s.wind); ok {
-			s.vTarget = vel
-			s.powerTarget = c.PowerFromVel(vel)
-			// Uncomment lines below for velTable velocities error calculation.
-			// p.VelErrors = true
-			// powerTarget := p.Powermodel.FlatPower * power.Ratio(s.grade, s.wind)
-			// c.VelError(powerTarget, vel)
-			return nil
-		}
-		// vel goes to velguess for VelFromPower
-	}
-	////////////////////////////////////////////////////////////////////////
-	s.powerTarget = p.Powermodel.FlatPower * power.Ratio(s.grade, s.wind)
-	s.vTarget, ok = c.VelFromPower(s.powerTarget, vel)
-	////////////////////////////////////////////////////////////////////////
+
+	s.powerTarget = q.FlatPower * power.Ratio(s.grade, s.wind)
+	s.vTarget, ok = c.VelFromPower(s.powerTarget, -1) // -1 -> use velguess function
 
 	if !ok {
 		return errNew(" setTargetVelAndPower: velocity is not solvable: " + c.Error())
@@ -114,30 +87,27 @@ func (s *segment) adjustTargetVelByMaxMinPedaled(c *motion.BikeCalc, p par) {
 	if s.powerTarget > 0 && s.vTarget <= maxPedaled {
 		return
 	}
-	if TEST && !(s.powerTarget > 0 && s.vTarget > maxPedaled) {
-		panic("adjustTargetVelByMaxMinPedaled: should not be here")
-	}
-	s.vTarget = maxPedaled
-	s.powerTarget = c.PowerFromVel(maxPedaled)
-
-	if s.powerTarget >= 0 {
+	if s.powerTarget > 0 && s.vTarget > maxPedaled {
+		s.vTarget = maxPedaled
+		s.powerTarget = c.PowerFromVel(maxPedaled)
 		return
 	}
-	s.powerTarget = 0
-	s.vFreewheel = c.VelFreewheeling()
-	s.vTarget = s.vFreewheel
-	if TEST {
-		panic("adjustTargetVelByMaxMinPedaled: s.powerTarget < 0 ")
+	if !test {
+		return
 	}
+	if s.powerTarget == 0 && s.vTarget < maxPedaled {
+		panic("adjustTargetVelByMaxMinPedaled: " +
+			"powerTarget == 0 && vTarget < maxPedaled")
+	}
+	panic("adjustTargetVelByMaxMinPedaled: powerTarget < 0")
 }
 
 func (s *segment) setMaxVel(c *motion.BikeCalc, p par, next *segment) {
-	const (
-		turnGradeLim = 1.0 / 100
+	const turnGradeLim = 1.0 / 100
+	var (
+		q    = &p.Ride
+		vMax = q.MaxSpeed
 	)
-	q := &p.Ride
-	vMax := q.MaxSpeed
-
 	if q.LimitDownSpeeds && s.grade < q.SpeedLimitGrade {
 		if vDown := s.downhillMaxVel(c, p); vMax > vDown {
 			vMax = vDown
@@ -148,10 +118,6 @@ func (s *segment) setMaxVel(c *motion.BikeCalc, p par, next *segment) {
 			vMax = vTurn
 		}
 	}
-	if vMax < q.MinLimitedSpeed {
-		vMax = q.MinLimitedSpeed
-	}
-
 	s.vExitMax = 9999
 	if vMax > next.vMax {
 		if q.LimitExitSpeeds {
@@ -161,6 +127,13 @@ func (s *segment) setMaxVel(c *motion.BikeCalc, p par, next *segment) {
 			vMax = vEntry
 		}
 	}
+	if vMax < q.MinLimitedSpeed {
+		vMax = q.MinLimitedSpeed
+	}
+	if s.vTarget < vMax && s.powerTarget < 0 { // no unnecessary braking
+		s.powerTarget = 0
+		s.vTarget = c.VelFreewheel()
+	}
 	if s.vTarget > vMax {
 		s.vTarget = vMax
 		s.powerTarget = c.PowerFromVel(vMax)
@@ -168,23 +141,24 @@ func (s *segment) setMaxVel(c *motion.BikeCalc, p par, next *segment) {
 	s.vMax = vMax
 }
 
-func (s *segment) downhillMaxVel(c *motion.BikeCalc, p par) (speed float64) {
+func (s *segment) downhillMaxVel(c *motion.BikeCalc, p par) (v float64) {
 	q := &p.Ride
-	speed = q.MaxSpeed
+	v = q.MaxSpeed
 
 	if q.BrakingDist > 0 {
-		speed = c.MaxBrakeStopVel(q.BrakingDist)
-		// if s.grade < q.SteepDownhillGrade {
-		// 	speed *= q.SteepDownhillGrade / s.grade
-		// }
+		if v = c.MaxBrakeStopVel(q.BrakingDist); v > q.MaxSpeed {
+			v = q.MaxSpeed
+		}
 		return
 	}
 	if q.VerticalDownSpeed > 0 {
-		speed = q.VerticalDownSpeed / -s.grade * mh2ms
+		v = q.VerticalDownSpeed / -s.grade * mh2ms
 		if s.grade < q.SteepDownhillGrade {
-			speed *= q.SteepDownhillGrade / s.grade
+			v *= q.SteepDownhillGrade / s.grade
 		}
-		return
+		if v > q.MaxSpeed {
+			v = q.MaxSpeed
+		}
 	}
 	return
 }

@@ -1,21 +1,19 @@
 package route
 
-import (
-	"math"
-)
+import "math"
 
 // velSteps calculates the number of steps and the step size for a
 // velocity range v1-v0, so that steps * ΔvOut == v1 - v0.
 func velSteps(v0, v1, ΔvIn float64) (steps int, ΔvOut float64) {
 
-	steps = int(math.Abs((v1-v0)/ΔvIn)) + 1
+	steps = int(math.Abs(v1-v0)/ΔvIn) + 1
 	ΔvOut = (v1 - v0) / float64(steps)
 	return
 }
 
 func (s *segment) distSteps(Δtime float64) (steps int, Δdist float64) {
 
-	Δdist = (s.vExit + s.vTarget) * 0.4 * Δtime
+	Δdist = (s.vExit + s.vTarget) * 0.5 * Δtime
 	steps = int(s.distLeft/Δdist) + 1
 	Δdist = s.distLeft / float64(steps)
 	return
@@ -41,7 +39,7 @@ func (s *segment) acceDecePower(p par, acce bool) (maxPedaled, power float64) {
 
 func (s *segment) accelerationPower(p par) (power float64) {
 	if s.powerTarget < 0 {
-		if s.powerTarget < -p.Powermodel.FlatPower {
+		if s.powerTarget < -2*p.Ride.PowerAcceMin {
 			return 0
 		}
 		return p.Ride.PowerAcceMin
@@ -57,7 +55,7 @@ func (s *segment) accelerationPower(p par) (power float64) {
 }
 
 func (s *segment) decelerationPower(p par) (power float64) {
-	if s.powerTarget < powerTOL {
+	if s.powerTarget < powerTol {
 		return 0
 	}
 	return p.Ride.PowerDece * s.powerTarget
@@ -70,5 +68,24 @@ func (s *segment) decelerationMaxPedaled(p par) (vel float64) {
 		return p.Powermodel.MaxPedaledSpeed
 	}
 	vel = s.vTarget + dVel*p.Ride.VelDeceLim
-	return min(vel, p.Powermodel.MaxPedaledSpeed)
+	if vel > p.Powermodel.MaxPedaledSpeed {
+		vel = p.Powermodel.MaxPedaledSpeed
+	}
+	return vel
+}
+
+/*
+cosFromTanP22 returns inverse square root 1/math.Sqrt(1+tan^2) by a ratio of two
+2. degree polynomials of tan^2. Max error ~ 6e-10 for abs(tan) < 0.3.
+*/
+func cosFromTanP22(tan float64) (cos float64) {
+	const (
+		a2 = 0.73656502
+		a4 = 0.05920391
+		b2 = 1.2365650
+		b4 = 0.3024874
+	)
+	tan *= tan
+	cos = (1 + tan*(a2+tan*a4)) / (1 + tan*(b2+tan*b4))
+	return
 }

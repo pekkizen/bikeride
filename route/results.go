@@ -69,10 +69,9 @@ func (r *Results) calcRouteStats(o *Route) {
 		minDist            = 9999.0
 		maxEle             = -9999.0
 		minEle             = 9999.0
-		last               = o.segments
 	)
 
-	for i := 1; i <= last; i++ {
+	for i := 1; i <= o.segments; i++ {
 		var (
 			s     = &o.route[i]
 			ele   = s.ele
@@ -123,9 +122,7 @@ func (r *Results) calcRouteStats(o *Route) {
 	r.DistMax = maxDist
 	r.MaxGrade = maxGrade
 	r.MinGrade = minGrade
-	// dDdistTot := o.distGPX - o.distLine
-	// dDistFilt := o.distGPX - o.distance
-	// r.FilteredDistPros = 100 * dDistFilt / dDdistTot
+
 }
 
 func (o *Route) calcRouteCourse() {
@@ -161,13 +158,13 @@ func (r *Results) calcMiscStats(c *motion.BikeCalc, p par) {
 		r.DownhillMaxSpeed = (t.VerticalDownSpeed / -dhSpeedGRADE) * mh2ms * ms2kmh
 	} else {
 		c.SetGradeExact(dhSpeedGRADE)
-		r.DownhillMaxSpeed = c.MaxBrakeStopVel(t.BrakingDist) * ms2kmh
+		r.DownhillMaxSpeed = c.MaxBrakeStopVelNoWind(t.BrakingDist) * ms2kmh
 	}
 	if t.MinSpeed > 0 {
 		r.MaxGradeUp = c.GradeFromVelAndPower(t.MinSpeed, q.UphillPower) * 100
 	}
 	c.SetGradeExact(q.DownhillPowerGrade)
-	r.DownhillPowerSpeed, _ = c.NewtonRaphson(q.DownhillPower/100*q.FlatPower, 0, 8)
+	r.DownhillPowerSpeed, _ = c.NewtonRaphson(q.DownhillPower/100*q.FlatPower, minTolNR, 8)
 	r.DownhillPowerSpeed *= ms2kmh
 	r.RhoBase, _ = c.RhoFromEle(p.Environment.BaseElevation)
 }
@@ -177,9 +174,11 @@ func (r *Results) addCalculatorStats(c *motion.BikeCalc) {
 	r.VelErrorAbsMean = c.VelErrorAbsMean()
 	r.VelErrorPos = c.VelErrorPos()
 	r.VelErrorMax = c.VelErrorMax()
+	r.VelTol = c.VelTol()
 	r.SolverRoundsAvg = float64(c.SolverRounds()) / max(1, float64(c.SolverCalls()))
 	r.SolverCalls = c.SolverCalls()
 	r.MaxIter = c.MaxIter()
+	r.Counter = c.Counter()
 }
 
 func (r *Results) addRouteStats(o *Route, p par) {
@@ -211,7 +210,7 @@ func (r *Results) addRouteStats(o *Route, p par) {
 	r.Levelations = o.filter.levelations
 	r.FilterRounds = o.filter.ipoRounds
 	r.JriderTotal = o.JouleRider
-	r.Time = o.TimeRider
+	r.Time = o.Time
 	r.TimeTargetSpeeds = o.TimeTarget
 	r.JfromTargetPower = o.JriderTarget
 	r.LatMean = o.LatMean
@@ -219,11 +218,14 @@ func (r *Results) addRouteStats(o *Route, p par) {
 	r.Filtered = o.eleUpGPX - o.eleUp
 	r.Filterable = max(o.eleUpGPX, o.eleDownGPX) - (o.eleMax - o.eleMin) // max & min should be from GPX
 	r.FilteredPros = 100 * r.Filtered / r.Filterable
+	// dDdistTot := o.distGPX - o.distLine
+	// dDistFilt := o.distance - o.distLine
+	// r.FilteredDistPros = 100 * (dDdistTot - dDistFilt) / dDdistTot
 }
 
 func (r *Results) addRoadSegment(s *segment, p par) {
 
-	if s.distHor <= distTOL {
+	if s.distHor <= distTol {
 		return
 	}
 	if s.jouleRider > 0 {
@@ -242,7 +244,7 @@ func (r *Results) addRoadSegment(s *segment, p par) {
 	}
 	r.TimeUHBreaks += s.timeBreak
 	// r.TimeTargetSpeeds += s.dist / s.vTarget
-	r.TimeBraking += s.timeBraking
+	r.TimeBraking += s.timeBrake
 
 	r.DistFreewheel += s.distFreewheel
 	r.TimeFreewheel += s.timeFreewheel
@@ -258,15 +260,16 @@ func (r *Results) addRoadSegment(s *segment, p par) {
 
 func (r *Results) addEleUpByMomentum(s *segment) {
 
-	Jforward := s.jouleKinetic + s.jouleDeceRider
-	Jrelative := s.jouleKinetic / Jforward
-	sin := s.grade / math.Sqrt(1+s.grade*s.grade)
+	Jrelative := s.jouleKinetic / (s.jouleKinetic + s.jouleDeceRider)
+	// sin := s.grade / math.Sqrt(1+s.grade*s.grade)
+	sin := s.grade * cosFromTanP22(s.grade)
 	r.EleUpKinetic += Jrelative * sin * s.distKinetic
 }
 
 func (r *Results) addDists(s *segment) {
 
-	r.DistBrake += s.distBraking
+	r.DistBrake += s.distBrake
+	r.DistRider += s.distRider
 
 	grade := s.grade
 	if math.Abs(grade) < flatGRADE {
@@ -286,14 +289,15 @@ func (r *Results) addJoules(s *segment) {
 
 	jouleDrag, jouleGrav, jouleKinetic := s.jouleDrag, s.jouleGrav, s.jouleKinetic
 
-	jouleNetSum := s.jouleRider + s.jouleBraking + s.jouleRoll //+ s.jouleSink
+	jouleNetSum := s.jouleRider + s.jouleBrake + s.jouleRoll //+ s.jouleSink
 	jouleNetSum += jouleDrag + jouleGrav + jouleKinetic
 	r.SegEnergyMeanAbs += math.Abs(jouleNetSum)
 	r.SegEnergyMean += jouleNetSum
+	s.jouleNetSum = jouleNetSum // seg s updated
 
 	r.Jroll += s.jouleRoll
 	r.Jsink += s.jouleSink
-	r.Jbraking += s.jouleBraking
+	r.Jbraking += s.jouleBrake
 
 	if jouleDrag > 0 {
 		r.JdragPush += jouleDrag
@@ -301,7 +305,7 @@ func (r *Results) addJoules(s *segment) {
 		r.JdragRider += s.jouleDragRider
 		r.JdragBrake += s.jouleDragBrake
 		r.JdragFreewheel += s.jouleDragFreewh
-		r.JdragResistance += jouleDrag
+		r.JdragResist += jouleDrag
 	}
 
 	if jouleGrav > 0 {
@@ -314,9 +318,6 @@ func (r *Results) addJoules(s *segment) {
 	} else {
 		r.JkineticAcce += jouleKinetic
 	}
-	// if s.powerTarget > 0 {
-	// 	r.JfromTargetPower += s.dist * s.powerTarget / s.vTarget
-	// }
 }
 
 func (r *Results) addRider(s *segment, p par) {
@@ -362,7 +363,7 @@ func (r *Results) riderEnergy(p par) {
 		return
 	}
 	r.JriderTotal *= p.PowerOut      // here, not in unitConversionOut
-	r.JfromTargetPower *= p.PowerOut // overestimates r.JriderTotal 2-5%, only
+	r.JfromTargetPower *= p.PowerOut // overestimates r.JriderTotal ~5%, only
 	r.PowerRiderAvg = r.JriderTotal / (r.Time - r.TimeBraking)
 
 	r.BananaRider = r.JriderTotal * j2banana
@@ -394,7 +395,7 @@ func (r *Results) energySums() {
 	j = r.JkineticDece
 	j += r.JkineticAcce
 	j += r.Jbraking
-	j += r.Jsink
+	j += r.Jsink // sink is not a lost, but kind of unclassified energy
 	j += r.JgravUp
 	j += r.JgravDown
 	j += r.JdragRider
@@ -418,6 +419,7 @@ func (r *Results) unitConversionOut() {
 	r.DistGPX *= m2km
 	r.DistBrake *= m2km
 	r.DistFreewheel *= m2km
+	r.DistRider *= m2km
 	r.DistUphill *= m2km
 	r.DistDownhill *= m2km
 	r.DistFlat *= m2km
@@ -451,7 +453,7 @@ func (r *Results) unitConversionOut() {
 	r.JdragFreewheel *= j2Wh
 	r.JdragBrake *= j2Wh
 	r.JdragPush *= j2Wh
-	r.JdragResistance *= j2Wh
+	r.JdragResist *= j2Wh
 	r.Jroll *= j2Wh
 	r.JlossDT *= j2Wh
 	r.JgravUp *= j2Wh

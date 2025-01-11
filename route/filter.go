@@ -14,24 +14,18 @@ func (o *Route) Filter() {
 		f.maxAcceptedGrade <= 0 {
 		return
 	}
-	recalcDists := false
 	if f.distFilterTol >= 0 {
-		recalcDists = true
 		o.filterDistanceShortenInterpolation()
 	}
 	if f.ipoRounds > 0 {
-		recalcDists = true
 		o.filterInterpolateWithBackSteps()
+		o.recalcRoadDistances(1, o.segments)
 	}
 	if f.smoothingWeight > 0 {
-		recalcDists = false
-		if f.smoothingDist < 0 || f.smoothingDist > o.distMedian {
-			f.smoothingDist = o.distMedian
+		if f.smoothingWeightDist > o.distMedian || f.smoothingWeightDist == -1 {
+			f.smoothingWeightDist = o.distMedian
 		}
 		o.filterWeightedExponential()
-	}
-	if recalcDists {
-		o.recalcRoadDistances(1, o.segments)
 	}
 	if f.levelFactor > 0 {
 		o.filterLevel()
@@ -39,8 +33,8 @@ func (o *Route) Filter() {
 	if f.maxAcceptedGrade > 0 {
 		o.filterGradientReduce()
 	}
-	if false {
-		o.checkGradeErrors()
+	if false && test {
+		o.checkDistGradeErrors()
 	}
 }
 
@@ -49,13 +43,13 @@ func (o *Route) recalcRoadDistances(left, right int) {
 
 	r := o.route[left : right+1]
 
-	for left = 0; left < len(r); left++ {
-		s := &r[left]
+	for k := 0; k < len(r); k++ {
+		s := &r[k]
 		s.dist = s.distHor * math.Sqrt(1+s.grade*s.grade)
 	}
 }
 
-func (o *Route) checkGradeErrors() {
+func (o *Route) checkDistGradeErrors() {
 	var (
 		s    *segment
 		next = &o.route[1]
@@ -63,8 +57,12 @@ func (o *Route) checkGradeErrors() {
 	for i := 2; i <= len(o.route)-1; i++ {
 		s, next = next, &o.route[i]
 		grade := (next.ele - s.ele) / s.distHor
-		if e := math.Abs(grade - s.grade); e > 5e-14 {
-			println(s.segnum, e, grade)
+		if e := math.Abs(grade - s.grade); e > 2.5e-14 {
+			println("Filter grade err:", s.segnum, e, grade)
+		}
+		dist := s.distHor * math.Sqrt(1+s.grade*s.grade)
+		if e := math.Abs(dist-s.dist) / dist; e > 3e-16 {
+			println("Filter dist err", s.segnum, e, s.dist)
 		}
 	}
 }
@@ -78,7 +76,7 @@ func (o *Route) interpolateWithBackSteps(gradeLim float64) {
 		ipoDist        = o.filter.ipoDist
 		ipoSumDist     = o.filter.ipoSumDist
 	)
-	for k := 2; k < len(r)-1; k++ {
+	for k := 2; k <= len(r)-2; k++ {
 
 		I, J, K := &r[k-1], &r[k], &r[k+1]
 
@@ -89,15 +87,10 @@ func (o *Route) interpolateWithBackSteps(gradeLim float64) {
 			continue
 		}
 		if math.Abs(I.grade-J.grade) < gradeLim {
-			if I.grade*J.grade < 0 {
-				interpolate(I, J, K)
-				ipo++
-			}
 			backsteps = 0
 			continue
 		}
-
-		interpolate(I, J, K)
+		J.interpolate(I, K)
 
 		if backsteps < stepLim && k > 2 {
 			k -= 2
@@ -112,7 +105,7 @@ func (o *Route) interpolateWithBackSteps(gradeLim float64) {
 
 // interpolate interpolates elevation of segment J from
 // elevations of segments I and K.
-func interpolate(I, J, K *segment) {
+func (J *segment) interpolate(I, K *segment) {
 
 	tan := (K.ele - I.ele) / (I.distHor + J.distHor)
 	J.grade = tan
@@ -165,16 +158,17 @@ func (o *Route) filterInterpolateWithBackSteps() {
 // elevations back to near their original values.
 func (o *Route) filterWeightedExponential() {
 	var (
-		weight = o.filter.smoothingWeight * o.filter.smoothingDist
+		weight = o.filter.smoothingWeight * o.filter.smoothingWeightDist
 		r      = o.route
 		I, J   *segment
 	)
 	I = &r[len(r)-2]
-	for k := len(r) - 3; k > 0; k-- { //backwards
+	for k := len(r) - 3; k > 1; k-- { //backwards
 		I, J = &r[k], I
 
 		w := weight / (I.distHor + weight)
 		I.ele = I.ele + w*(J.ele-I.ele)
+
 	}
 	J = &r[1]
 	for k := 2; k < len(r); k++ { //forwards
@@ -200,7 +194,7 @@ func (o *Route) filterLevel() {
 	for k := 3; k < len(r)-1; k++ {
 		I, J, K = J, K, &r[k]
 
-		if I.grade*J.grade < -0.006*0.006 {
+		if I.grade*J.grade < 0 && math.Abs(I.grade-J.grade) < -0.01 {
 			o.filter.level(I, J, K)
 		}
 	}
@@ -263,16 +257,15 @@ func (o *Route) interpolateDistance(left, right int, tan float64) {
 
 func (o *Route) filterDistanceShortenInterpolation() {
 	var (
-		distIpo     = o.filter.distFilterDist
 		left, right = 1, 1
 		r           = o.route
 		s           *segment
 		distHor     float64
+		distIpo     = o.filter.distFilterDist
+		grade       = o.filter.distFilterTol
 	)
-	grade := o.filter.distFilterTol
-	// Relative excess distance with gradient grade
+	// Relative excess distance with gradient (tan) grade
 	relDistLim := math.Sqrt(1 + grade*grade)
-
 	for left < len(r)-4 {
 		distHorSum, distRoad := 0.0, 0.0
 
@@ -293,7 +286,7 @@ func (o *Route) filterDistanceShortenInterpolation() {
 			eleIpo   = s.ele + s.grade*(distHor-(distHorSum-distIpo))
 			dEle     = eleIpo - r[left].ele
 			distLine = math.Sqrt(distIpo*distIpo + dEle*dEle)
-			nextleft = (left + 2*right) / 3
+			nextleft = (left + 2*right) / 3 // backspace 1/3
 		)
 		if distHor > distIpo || right == o.segments {
 			nextleft = right + 1
@@ -302,6 +295,7 @@ func (o *Route) filterDistanceShortenInterpolation() {
 
 		if distRoad > distLine*relDistLim {
 			o.interpolateDistance(left, right, dEle/distIpo)
+			o.recalcRoadDistances(left, right)
 		}
 		left = nextleft
 	}
@@ -315,11 +309,10 @@ func (o *Route) filterGradientReduce() {
 		left     = 1
 	)
 	for left < last {
-		for left < len(r)-2 {
+		for ; left < len(r)-2; left++ {
 			if math.Abs(r[left].grade) > gradeLim {
 				break
 			}
-			left++
 		}
 		var (
 			eleStart = r[left].ele
@@ -329,14 +322,17 @@ func (o *Route) filterGradientReduce() {
 		for ; right <= last; right++ {
 
 			distHor += r[right].distHor
-			grade := (r[right+1].ele - eleStart) / distHor
+			tan := (r[right+1].ele - eleStart) / distHor
 
-			if math.Abs(grade) < gradeLim || right == last {
-				o.interpolateDistance(left, right, grade)
+			if math.Abs(tan) < gradeLim || right == last {
+				o.interpolateDistance(left, right, tan)
 				o.recalcRoadDistances(left, right)
 				break
 			}
 		}
 		left = right
+	}
+	if math.Abs(r[last].grade) > gradeLim {
+		r[last].grade = r[last-1].grade // better solution?
 	}
 }

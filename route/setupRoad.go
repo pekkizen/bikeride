@@ -5,16 +5,17 @@ import (
 )
 
 func (o *Route) SetupRoad(p par) {
-	const radius = 6371.0 // Earth radius in km
+	const radius = 6371.0 // Earth mean radius in km
+	// radius := earthRadiusByLatitude(o.LatMean)
 
 	// At 1000 m elevation, the distance is 6372/6371 = 1.000157 times the
 	// distance at sea level. This is 15.7 meters / 100 km, which is
 	// insignificant compared to the distance error produced by elevation
 	// measurement noise in most route data. But we get it for practically free.
 
-	eleFactor := (radius + o.EleMean/1000) / radius
-	o.metersLon = metersLon(o.LatMean) * eleFactor
-	o.metersLat = metersLat(o.LatMean) * eleFactor
+	eleCorrection := (radius + o.EleMean/1000) / radius
+	o.metersLon = metersLon(o.LatMean) * eleCorrection
+	o.metersLat = metersLat(o.LatMean) * eleCorrection
 
 	o.setWind(p.Environment.WindCourse, p.Environment.WindSpeed)
 	o.setupSegments()
@@ -44,7 +45,7 @@ func (o *Route) setupSegments() {
 		next       = &o.route[1]
 		s          *segment
 		median     = 0.62 * o.distMean
-		weight     = 0.005 * float64(o.segments) * median
+		weight     = max(5, 0.0025*float64(o.segments)) * median
 		windSpeed  = o.windSpeed
 	)
 	for i := 2; i <= o.segments+1; i++ {
@@ -58,13 +59,15 @@ func (o *Route) setupSegments() {
 		)
 		distSum += distRoad
 		distHorSum += distHor
+		// s.next = next
+		// next.prev = s
 
 		if dEle < 0 {
 			eleDown += dEle
 		} else {
 			eleUp += dEle
 		}
-		// Approximate distance median
+		// Approximate horizontal road segment length median. Avoid bad branch prediction
 		median += math.Copysign(median/weight, distHor-median)
 		weight++
 		s.dist = distRoad
@@ -77,14 +80,14 @@ func (o *Route) setupSegments() {
 			// Wind component of riding direction. Dot product of unit wind
 			// vector and unit riding direction vector * windSpeed.
 			s.wind = (dLon*o.windSin + dLat*o.windCos) / distHor * windSpeed
-			// Same by trig
 			// s.wind = math.Cos(o.windCourse-s.course) * windSpeed
 		case o.windCourse == -1:
 			// Constant wind, head or tail
 			s.wind = windSpeed
 		case o.windCourse == -2:
-			// Constant head and tailwind
+			// Constant head or tailwind
 			// changing after 63 segments
+			// if i&1 == 0 {
 			if i&63 == 0 {
 				windSpeed = -windSpeed
 			}
@@ -121,29 +124,26 @@ course(+/-Inf, x) = NaN
 func course(dLon, dLat float64) float64 {
 	const B = 0.596227
 
-	p := B * dLon * dLat
-	if p < 0 {
-		p = -p
-	}
+	p := math.Abs(B * dLon * dLat)
 	q := p + dLon*dLon
 	p += dLat * dLat
-	a := (π / 2) * q / (p + q) // atan(abs(dLon/dLat)) in [0, π/2]
+	atan := (π / 2) * q / (p + q) // atan(abs(dLon/dLat)) in [0, π/2]
 	if dLon >= 0 {
 		if dLat > 0 {
-			return a
+			return atan
 		}
-		return π - a
+		return π - atan
 	}
 	if dLat < 0 {
-		return π + a
+		return π + atan
 	}
-	return (2 * π) - a
+	return (2 * π) - atan
 }
 
 // metersLat return length of one latitude degree in meters at latitude lat.
 // https://en.wikipedia.org/wiki/Geographic_coordinate_system#Latitude_and_longitude
 func metersLat(lat float64) float64 {
-	lat *= (π / 180) // to radians
+	lat *= (π / 180)
 	return 111132.92 - 559.82*math.Cos(2*lat) + 1.175*math.Cos(4*lat)
 }
 
@@ -153,9 +153,10 @@ func metersLon(lat float64) float64 {
 	return 111412.84*math.Cos(lat) - 93.5*math.Cos(3*lat) + 0.118*math.Cos(5*lat)
 }
 
+// radius = turn distance / turn angle
 func (o *Route) turnRadius() {
 	const (
-		minRadius = 5.0
+		minRadius = 4.0
 		maxRadius = 80
 	)
 	var (
@@ -164,24 +165,24 @@ func (o *Route) turnRadius() {
 		next = &r[2]
 		prev *segment
 	)
-	for i := 3; i < len(r)-1; i++ { // len(r) = o.segments+2
+	for i := 3; i <= len(r)-2; i++ { // len(r)-2 = o.segments
 		prev, s, next = s, next, &r[i]
 
-		// radius = turn distance / turn angle
 		radius := s.distHor * 2 / angle(prev.course, next.course)
-		if radius > maxRadius {
-			continue // s.radius = 0
+		switch {
+		case radius > maxRadius: // leaves s.radius = 0
+		case radius > minRadius:
+			s.radius = radius
+		default:
+			s.radius = minRadius
 		}
-		if radius < minRadius {
-			radius = minRadius
-		}
-		s.radius = radius
 	}
 }
 
+// func angle(a, b float64) float64 { return math.Abs(math.Mod(a-b+3*π, 2*π) - π) }
+
 // angle returns positive angle (<= π) of two driving courses.
 // 0 <= a,b <= 2π
-// func angle(a, b) {return math.Abs(math.Mod(a-b + 3*π, 2*π) - π)}
 func angle(a, b float64) float64 {
 	if a -= b; a < 0 {
 		a = -a
@@ -192,22 +193,21 @@ func angle(a, b float64) float64 {
 	return (2 * π) - a
 }
 
-/*
 // earthRadius returns the geocentric radius of the earth in km at latitude lat.
 // https://en.wikipedia.org/wiki/Earth_radius
-func earthRadiusByLatitude(lat float64) float64 {
-	const (
-		R1 = 6378.137 // Equatorial radius
-		R2 = 6356.752 // Polar radius
-	)
-	lat *= deg2rad
-	c := R1 * math.Cos(lat)
-	d := R2 * math.Sin(lat)
-	a := R1 * c
-	b := R2 * d
-	return math.Sqrt((a*a + b*b) / (c*c + d*d))
-}
-*/
+// func earthRadiusByLatitude(lat float64) float64 {
+// 	const (
+// 		R1 = 6378.137 // Equatorial radius
+// 		R2 = 6356.752 // Polar radius
+// 	)
+// 	lat *= (π / 180)
+// 	c := R1 * math.Cos(lat)
+// 	d := R2 * math.Sin(lat)
+// 	a := R1 * c
+// 	b := R2 * d
+// 	return math.Sqrt((a*a + b*b) / (c*c + d*d))
+// }
+
 /*
 // courseAsin calculates compass bearing in radians (0 - 2π)
 // from a unit direction vector.
@@ -238,39 +238,5 @@ func fastAsin(x float64) float64 {
 		return -z
 	}
 	return z
-}
-
-/*
-// https://www-labs.iro.umontreal.ca/~mignotte/IFT2425/Documents/
-// EfficientApproximationArctgFunction.pdf
-// Formula 10. atan(x) = x / (1 + 0.28086x^2), x in [-1, 1].
-// Error < 0.005 rad, 0.29 deg.
-// This is, for some reasons, 2+ x slower than course in Bikeride
-// cpu-profile and in standard benchmark loop. Table 3 in Girones et al.
-// gives ~same time use difference.
-func ccourse2(dLon, dLat float64) float64 {
-	const b2 = 0.28086
-	a := 0.0
-
-	z := dLon / dLat
-	if z < 0 {
-		z = -z
-	}
-	if z > 1 {
-		z = 1 / z
-		a = π/2 - z/(1+z*z*b2)
-	} else {
-		a = z / (1 + z*z*b2) // a is now positive angle from y-axis
-	}
-	if dLon > 0 {
-		if dLat > 0 {
-			return a
-		}
-		return π - a
-	}
-	if dLat < 0 {
-		return π + a
-	}
-	return (2 * π) - a
 }
 */

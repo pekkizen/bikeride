@@ -119,10 +119,10 @@ func (o *Route) checkRideSetup(p par, l *logerr.Logerr) {
 			if s.vTarget < minSpeed {
 				l.SegMsg(1, n, "vTarget < minSpeed")
 			}
-			if s.vTarget == minSpeed && s.powerTarget < q.UphillPower-4*powerTOL {
+			if s.vTarget == minSpeed && s.powerTarget < q.UphillPower-4*powerTol {
 				l.SegMsg(1, n, "vTarget == minSpeed && powerTarget < uphillPower, ", s.calcPath)
 			}
-			if s.vTarget > minSpeed && s.powerTarget > q.UphillPower+4*powerTOL {
+			if s.vTarget > minSpeed && s.powerTarget > q.UphillPower+4*powerTol {
 				l.SegMsg(1, n, "vTarget > minSpeed && powerTarget > uphillPower, ", s.calcPath)
 			}
 		}

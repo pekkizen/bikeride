@@ -4,13 +4,14 @@ import (
 	"github.com/pekkizen/bikeride/param"
 )
 
-// type par offers all parameters for the ride calculation.
+// Type par offers all parameters for the ride calculation.
 // Not *param.Parameters methods, which are not needed.
 type par *param.Parameters
 
 // We need a function to calculate relative power from grade and wind.
 // For grade = 0 and wind = 0, the relative power is 1.
-// The ratioGenerator interface is implemented by power.RatioGenerator() in bikeride.go.
+// The ratioGenerator interface is implemented by package power and
+// gen := power.RatioGenerator() in package main/bikeride.go.
 // The Ratio method is called once for each road segment in the function setupRide.
 type ratioGenerator interface {
 	Ratio(grade, wind float64) (ratio float64)
@@ -22,13 +23,13 @@ const (
 	kmh2ms   = 1.0 / 3.6
 	ms2kmh   = 3.6
 	m2km     = 1.0 / 1000
-	sec2min  = 1.0 / 60
 	j2Wh     = 1.0 / 3600
 	kj2wh    = 1.0 / 3.6
-	π        = 3.1415926535897932384626433832795
-	distTOL  = 0.05 // m
-	powerTOL = 0.25 // W
-	TEST     = false
+	π        = 3.1415926535897932384
+	distTol  = 0.001 // m
+	powerTol = 0.01  // W
+	minTolNR = 1e-12
+	test     = true
 )
 
 /*
@@ -64,9 +65,11 @@ const (
 const (
 	newtonRaphson   = 1
 	newtonHalley    = 2
-	singleQuadratic = 3
-	doubleQuadratic = 4
-	doubleLinear    = 5
+	householder3    = 3
+	singleQuadratic = 4
+	doubleQuadratic = 5
+	doubleLinear    = 6
+	singleLinear    = 7
 
 	stepVel  = 1
 	stepTime = 2
@@ -94,8 +97,8 @@ type filter struct {
 	ipoDist      float64
 	ipoSumDist   float64
 
-	smoothingWeight float64
-	smoothingDist   float64
+	smoothingWeight     float64
+	smoothingWeightDist float64
 
 	levelFactor float64
 	levelMax    float64
@@ -142,18 +145,20 @@ type segment struct {
 	jouleDrag       float64
 	jouleDragFreewh float64
 	jouleKinetic    float64
-	jouleBraking    float64
+	jouleBrake      float64
 	jouleDragBrake  float64
 	jouleSink       float64
+	jouleNetSum     float64
 
 	distKinetic   float64
 	distLeft      float64
-	distBraking   float64
+	distBrake     float64
 	distFreewheel float64
+	distRider     float64
 
 	time          float64
 	timeRider     float64
-	timeBraking   float64
+	timeBrake     float64
 	timeFreewheel float64
 	timeBreak     float64
 
@@ -168,6 +173,7 @@ type Route struct {
 	trkpErrors   int
 	trkpRejected int
 	segments     int
+	counter      int
 
 	distance   float64
 	distDirect float64
@@ -194,7 +200,7 @@ type Route struct {
 
 	JouleRider   float64
 	JriderTarget float64
-	TimeRider    float64
+	Time         float64
 	TimeTarget   float64
 
 	EleMean     float64
@@ -222,6 +228,7 @@ type Results struct {
 	DistDirect    float64
 	DistLine      float64
 	DistBrake     float64
+	DistRider     float64
 	DistFreewheel float64
 	DistUphill    float64
 	DistDownhill  float64
@@ -245,9 +252,10 @@ type Results struct {
 	LatMean float64
 	Gravity float64
 
-	Filtered       float64
-	Filterable     float64
-	FilteredPros   float64
+	Filtered     float64
+	Filterable   float64
+	FilteredPros float64
+	// FilteredDistPros float64
 	Ipolations     int
 	Levelations    int
 	FilterRounds   int
@@ -295,7 +303,7 @@ type Results struct {
 	JdragRider       float64
 	JdragBrake       float64
 	JdragFreewheel   float64
-	JdragResistance  float64
+	JdragResist      float64
 	JdragPush        float64
 	Jroll            float64
 	JgravUp          float64
@@ -311,10 +319,12 @@ type Results struct {
 	VelErrorAbsMean float64
 	VelErrorPos     float64
 	VelErrorMax     float64
+	VelTol          float64
 	MaxIter         int
 	SolverCalls     int
 	CalcSteps       int
 	CalcSegs        int
+	Counter         int
 	CalcStepsAvg    float64
 	SingleStepPros  float64
 }
