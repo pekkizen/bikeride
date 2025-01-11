@@ -19,7 +19,8 @@ const (
 	licnote   = "Use of " + version + " is governed by GNU General Public License v3.0."
 )
 const ms2kmh = 3.6
-const development = true
+const test = true
+const minTolNR = 1e-12
 
 func main() {
 	l := logerr.New()
@@ -56,6 +57,7 @@ func main() {
 		return
 	}
 	// gpz.TrkpSliceRelease()
+	gpz = nil
 	cal := motion.Calculator()
 	gen := power.RatioGenerator()
 
@@ -73,22 +75,23 @@ func main() {
 	rou.Ride(cal, p)
 	rou.UphillBreaks(p)
 	res := rou.Results(cal, p, l)
-	_ = res
-	if p.LogMode >= 0 {
+	// _ = res
+	if test && p.LogMode >= 0 {
 		rou.Log(p, l)
 	}
-	if development && len(os.Args) > 2 && os.Args[2] == "-prof" {
+	if test && len(os.Args) > 2 && os.Args[2] == "-prof" {
 		res = cpuProfile(gpz, cal, gen, p, l)
 	}
 	p.UnitConversionOut()
 	writeAllResults(p, l, res, rou)
+	// rou.Chart()
 }
 
 func writeAllResults(p *param.Parameters, l *logerr.Logerr, res *route.Results, rou *route.Route) {
 	if p.Display {
 		res.Display(p, l)
-		if development {
-			l.Printf("Result checksum:           %d \n", res.CheckSum()>>45)
+		if test {
+			l.Printf("Result checksum:       %d \n", res.CheckSum()>>45)
 		}
 	}
 	if p.ResultTXT {
@@ -100,15 +103,6 @@ func writeAllResults(p *param.Parameters, l *logerr.Logerr, res *route.Results, 
 			l.Err("Results TXT:", e)
 		}
 	}
-	if p.ResultJSON {
-		w, e := writer(p, "_results.json")
-		if e == nil {
-			e = res.WriteJSON(w)
-		}
-		if e != nil {
-			l.Err("Results JSON:", e)
-		}
-	}
 	if p.RouteCSV {
 		w, e := writer(p, ".csv")
 		if e == nil {
@@ -116,6 +110,15 @@ func writeAllResults(p *param.Parameters, l *logerr.Logerr, res *route.Results, 
 		}
 		if e != nil {
 			l.Err("Route CSV:", e)
+		}
+	}
+	if p.ResultJSON {
+		w, e := writer(p, "_results.json")
+		if e == nil {
+			e = res.WriteJSON(w)
+		}
+		if e != nil {
+			l.Err("Results JSON:", e)
 		}
 	}
 	if p.ParamOutJSON {
@@ -155,10 +158,11 @@ func checkResultDir(p *param.Parameters, l *logerr.Logerr) error {
 
 func sysErrorMsg(err error, cal *motion.BikeCalc, l *logerr.Logerr) string {
 	s := "The ride could not be calculated from the given parameters. "
-	s += "Symptom/cause: Help! can you free us from pedalling in this dark place!"
+	s += "Symptom/cause: Help! We are exhausted. Please can you free us from pedalling in this dark place!"
 	s = l.Sprintf("%s%v", s, err)
-	if development {
-		s += l.Sprintf("\n%#v\n", *cal) // calculator dump
+	if test {
+		// s += l.Sprintf("\n\n%#v\n", *cal) // calculator dump
+		s += "\n" + cal.Dump() + ": "
 	}
 	return s
 }
