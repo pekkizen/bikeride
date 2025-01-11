@@ -1,7 +1,7 @@
 package logerr
 
-//Tämä on peräisin GO standard librarysta (log.go). Mutex/sync sekä aikaleimat
-// poistettu  sekä muutenkin raskaasti modifioitu bikeride tarpeisiin.
+// Tämä on peräisin GO standard librarysta (log.go). Mutex/sync sekä aikaleimat
+// poistettu sekä muutenkin raskaasti modifioitu bikeride tarpeisiin.
 
 import (
 	"fmt"
@@ -18,9 +18,9 @@ const errorPrefix = "***error: "
 // output to an io.Writer. Each logging operation makes a single call to
 // the Writer's Write method.
 type logger struct {
-	prefix string // prefix to write at beginning of each line
-	out io.Writer // destination for output
-	buf []byte    // for accumulating text to write
+	prefix string    // prefix to write at beginning of each line
+	out    io.Writer // destination for output
+	buf    []byte    // for accumulating text to write
 }
 
 // Logerr wraps two loggers and adds error count,
@@ -128,7 +128,7 @@ func (e *Logerr) SegMsg(level, segment int, v ...interface{}) error {
 	case 3:
 		seg = " " + seg
 	}
-	msg := "seg " + seg +  "\t" + fmt.Sprintln(v...)
+	msg := "seg " + seg + "\t" + fmt.Sprintln(v...)
 	return e.Output(level, msg)
 }
 
