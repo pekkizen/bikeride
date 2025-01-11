@@ -21,30 +21,30 @@ func (devNull) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 func cpuProfile(gpz *gpx.GPX, cal *motion.BikeCalc,
-	gen *power.Generator, p *param.Parameters, l *logerr.Logerr) *route.Results {
-	_ = devNull(0)
-
-	millions := 50
-	rou, _ := route.New(gpz, p)
-	rounds := millions * 1000 * 1000 / rou.Segments()
-	l.Printf("Calculating %d million road segments. Wait... or press ctrl+c\n", millions)
-	// rou0, _ := route.New(gpz, p)
+	gen *power.Generator, par *param.Parameters, log *logerr.Logerr) *route.Results {
+	writer := devNull(911)
+	millions := 100
 	var res *route.Results
+	rou, _ := route.New(gpz, par)
+	rounds := millions * 1000 * 1000 / rou.Segments()
+	log.Printf("Calculating %d million road segments. Wait... or press ctrl+c\n", millions)
+	rou0, _ := route.New(gpz, par)
 	prof := profile.Start(profile.ProfilePath("."))
 	for i := 0; i < rounds; i++ {
-		gpz, _ := gpx.New(p.GPXdir+p.GPXfile, p.GPXuseXMLparser, p.GPXignoreErrors)
-		rou, _ = route.New(gpz, p)
-		// rou.NewCopy(rou0) // to avoid garbage collection timing
-		rou.SetupRoad(p)
+		// gpz, _ := gpx.New(p.GPXdir+p.GPXfile, p.GPXuseXMLparser, p.GPXignoreErrors)
+		// gpx.ParseGPX(gpxbytes, gpz, true)
+		// rou, _ = route.New(gpz, par)
+		rou.NewCopy(rou0) // to avoid garbage collection timing
+		rou.SetupRoad(par)
 		rou.Filter()
-		rou.SetupRide(cal, gen, p)
-		rou.Ride(cal, p)
+		rou.SetupRide(cal, gen, par)
+		rou.Ride(cal, par)
 		// rou.UphillBreaks(p)
-		res = rou.Results(cal, p, l)
-		_ = res
-		res.WriteTXT(p, devNull(0))
-		// res.WriteJSON(devNull(0))
-		rou.WriteCSV(p, devNull(0))
+		res = rou.Results(cal, par, log)
+		// _ = res
+		res.WriteTXT(par, writer)
+		// res.WriteJSON(writer)
+		// rou.WriteCSV(par, writer)
 	}
 	prof.Stop()
 	return res
