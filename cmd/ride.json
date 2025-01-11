@@ -1,0 +1,65 @@
+{
+    "environment": {
+        "windCourse (deg)": 130,
+        "windSpeed (m/s)": 0,
+        "temperature (C)": 15,
+        "baseElevation (m)": -1,
+        "airPressure (hPa)": -1,
+        "airDensity rho": -1,
+        "gravity (m/s^2)": -1
+    },
+    "bike": {
+        "airDragCoef CdA": -1,
+        "drivetrainLoss (%)": 6,
+        "rollingResistance": 0.006,
+        "brakeFriction": 0.25,
+        "turnFriction": 0.15,
+        "weight (kg)": {
+            "rider": 70,
+            "bike": 12,
+            "luggage": 10,
+            "total": -1,
+            "rotating": 2.5
+        }
+    },
+    "powermodel": {
+        "flatGroundPower (w)": 95,
+        "flatGroundSpeed (km/h)": 20,
+        "uphillPower (w)": 170,
+        "verticalUpSpeed (m/h)": -1,
+        "uphillPowerSpeed (km/h)": -1,
+        "uphillPowerGrade (%)": 8,
+        "maxPedaledSpeed (km/h)": 25,
+        "tailWindPower (%)": 95,
+        "headWindPower (%)": 115
+    },
+    "ride": {
+        "maxSpeed (km/h)": 80,
+        "minSpeed (km/h)": 4,
+        "limitDownSpeeds": true,
+        "limitTurnSpeeds": true,
+        "limitExitSpeeds": true,
+        "minLimitedSpeed (km/h)": 6,
+        "verticalDownSpeed (m/h)": -1,
+        "brakingDistance (m)": 40,
+        "accelerationPower (%)": 125,
+        "minAccelerationPower (w)": 75,
+        "decelerationPower (%)": 85,
+        "velDeceLim (%)": 50,
+        "keepEntrySpeed (%)": 5,
+        "reverseRoute": false,
+        "roundTrip": false
+    },
+    "uphillBreaks": {
+        "powerLimit (%)": 90,
+        "climbDuration (min)": 20,
+        "breakDuration (min)": -1
+    },
+    "filter": {
+        "minSegmentDistance (m)": 3,
+        "distInterpolationTol (%)": 10,
+        "distInterpolationDistance (m)": 170,
+        "smoothingWeight": 0.5,
+        "maxAcceptedGrade (%)": 20
+    }
+}
