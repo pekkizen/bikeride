@@ -20,7 +20,7 @@ const (
 )
 const ms2kmh = 3.6
 const test = true
-const minTolNR = 1e-12
+const minTolNR = 1e-10
 
 func main() {
 	l := logerr.New()
@@ -56,8 +56,6 @@ func main() {
 		l.Err(e)
 		return
 	}
-	// gpz.TrkpSliceRelease()
-	gpz = nil
 	cal := motion.Calculator()
 	gen := power.RatioGenerator()
 
@@ -75,7 +73,6 @@ func main() {
 	rou.Ride(cal, p)
 	rou.UphillBreaks(p)
 	res := rou.Results(cal, p, l)
-	// _ = res
 	if test && p.LogMode >= 0 {
 		rou.Log(p, l)
 	}
@@ -84,7 +81,6 @@ func main() {
 	}
 	p.UnitConversionOut()
 	writeAllResults(p, l, res, rou)
-	// rou.Chart()
 }
 
 func writeAllResults(p *param.Parameters, l *logerr.Logerr, res *route.Results, rou *route.Route) {
@@ -162,7 +158,7 @@ func sysErrorMsg(err error, cal *motion.BikeCalc, l *logerr.Logerr) string {
 	s = l.Sprintf("%s%v", s, err)
 	if test {
 		// s += l.Sprintf("\n\n%#v\n", *cal) // calculator dump
-		s += "\n" + cal.Dump() + ": "
+		s += "\n" + cal.Dump() + "\n"
 	}
 	return s
 }

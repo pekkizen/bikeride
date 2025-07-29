@@ -40,12 +40,13 @@ func setupCalculator(c *motion.BikeCalc, o *route.Route, p *param.Parameters) {
 	c.SetVelTol(p.VelTol)
 	c.SetBracket(p.Bracket)
 	c.SetVelErrors(p.VelErrors)
-	// if p.VelSolver < 1 {
-	// 	p.VelSolver = motion.Householder3Method
-	// 	if p.Environment.WindSpeed > motion.Householder3WindLimit {
-	// 		p.VelSolver = motion.NewtonRaphsonMethod
-	// 	}
-	// }
+	if p.VelSolver < 1 {
+		p.VelSolver = motion.NewtonRaphsonM
+		if p.Environment.WindSpeed == 0 {
+			p.VelSolver = motion.Householder3M
+		}
+	}
+
 	c.SetVelSolver(p.VelSolver)
 	p.VelSolver = c.SolverFunc()
 
@@ -121,19 +122,22 @@ func setupParameters(p *param.Parameters,
 	c *motion.BikeCalc, l *logerr.Logerr) error {
 
 	if p.DeltaVel < 0 {
-		p.DeltaVel = 0.5
+		p.DeltaVel = 0.7
 	}
 	if p.DeltaTime < 0 {
-		p.DeltaTime = 0.5
+		p.DeltaTime = 1
 	}
 	p.DeltaVel = min(2, max(0.0001, p.DeltaVel))
 	p.DeltaTime = min(3, max(0.0001, p.DeltaTime))
+
 	if p.AcceStepMode < 1 {
 		p.AcceStepMode = 1
 	}
-	if p.AcceStepMode > 1 && p.DeltaVel > p.DeltaTime { // for braking to keep accuracy
-		p.DeltaVel = p.DeltaTime
+	if p.AcceStepMode > 1 { // for braking to keep accuracy
+		p.DeltaVel = min(p.DeltaTime*0.5, p.DeltaVel)
 	}
+	p.OdeltaVel = 1 / p.DeltaVel // for func velsteps
+
 	if !p.Ride.LimitTurnSpeeds && !p.Ride.LimitDownSpeeds {
 		p.Ride.LimitExitSpeeds = false
 	}
