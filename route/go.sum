@@ -1,0 +1,10 @@
+github.com/pekkizen/bikeride v0.0.0-20230918185622-678fd1966238 h1:apyo7Zfuhn1xt+UHIzIs9kcIHKczeYklUpqu9gI0mZ8=
+github.com/pekkizen/bikeride v0.0.0-20230918185622-678fd1966238/go.mod h1:HqO2QDQdnZkYrBG7JXMFchX++3C9Irat5YNhM8u58oo=
+github.com/pekkizen/motion v0.0.0-20230917153202-e9f2ac7e178f h1:r7jjAHgl9PhwJCdVbIgU/orA9+T4Fzj9xdGh8KkMucQ=
+github.com/pekkizen/motion v0.0.0-20230917153202-e9f2ac7e178f/go.mod h1:SyMNhwO/IZvqM17AwGfOE4GUfTEU9MzcumbMAYBYcgo=
+github.com/pekkizen/motion v0.0.0-20240229071158-9e5b0dc81709 h1:w3snksyZHusGX7RePF+pXnV19NFmt4wM3Z4FvBwpDUw=
+github.com/pekkizen/motion v0.0.0-20240229071158-9e5b0dc81709/go.mod h1:SyMNhwO/IZvqM17AwGfOE4GUfTEU9MzcumbMAYBYcgo=
+github.com/pekkizen/numconv v0.0.0-20200204002228-4ef63a2169fe h1:VH1dLGXYmcm+D89mnva82JebyisgtNw4aXrMZAb1t5M=
+github.com/pekkizen/numconv v0.0.0-20200204002228-4ef63a2169fe/go.mod h1:Ju6A/vDJ3SPKmPsi654Tu6KDu09QsYlvVWHBdk4pIoY=
+github.com/pekkizen/numconv v0.0.0-20240229065523-8fdc2fc3f7fd h1:vctpWaUKtFx3i3b45gXdZxvEJcDzaZzDYVD4FkhMi5g=
+github.com/pekkizen/numconv v0.0.0-20240229065523-8fdc2fc3f7fd/go.mod h1:U+O26plq97v+IlWXlcI5245Cq2AA63dGR8PX24ou3vA=
