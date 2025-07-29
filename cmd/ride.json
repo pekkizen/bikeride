@@ -1,8 +1,8 @@
 {
     "environment": {
-        "windCourse (deg)": 130,
-        "windSpeed (m/s)": 0,
-        "temperature (C)": 15,
+        "windCourse (deg)": 60,
+        "windSpeed (m/s)": 5.0,
+        "temperature (C)": 25,
         "baseElevation (m)": -1,
         "airPressure (hPa)": -1,
         "airDensity rho": -1,
@@ -12,7 +12,7 @@
         "airDragCoef CdA": -1,
         "drivetrainLoss (%)": 6,
         "rollingResistance": 0.006,
-        "brakeFriction": 0.25,
+        "brakeFriction": 0.3,
         "turnFriction": 0.15,
         "weight (kg)": {
             "rider": 70,
@@ -35,7 +35,7 @@
     },
     "ride": {
         "maxSpeed (km/h)": 80,
-        "minSpeed (km/h)": 4,
+        "minSpeed (km/h)": 3.6,
         "limitDownSpeeds": true,
         "limitTurnSpeeds": true,
         "limitExitSpeeds": true,
@@ -57,9 +57,10 @@
     },
     "filter": {
         "minSegmentDistance (m)": 3,
-        "distInterpolationTol (%)": 10,
-        "distInterpolationDistance (m)": 170,
+        "distInterpolateTol (%)": 10,
+        "distInterpolateDist (m)": 170,
         "smoothingWeight": 0.5,
-        "maxAcceptedGrade (%)": 20
+        "smoothingWeightDist (m)": 25,
+        "maxAcceptedGrade (%)": 15
     }
 }

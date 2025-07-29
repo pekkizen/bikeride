@@ -30,25 +30,25 @@
         "CUT": 1,
         "CUH": 1
     },
-    "ride": {
-        "steepDownhillGrade (%)": -12,
-        "speedLimitGrade (%)": 0
-    },
     "filter": {
         "interpolateRounds": -1,
-        "interpolateBacksteps": 3,
-        "initialRelativeGrade (%)": 1,
-        "interpolateDist (m)": 25,
+        "interpolateBacksteps": 2,
+        "initialRelativeGrade (%)": 7,
+        "minRelativeGrade (%)": 3,
         "interpolateSumDist (m)": 75,
-        "smoothingWeightDist (m)": 25,
+        "interpolateDist (m)": 50,
         "levelFactor": -1,
         "levelMin (m)": 1,
         "levelMax (m)": 5
     },
+    "ride": {
+        "steepDownhillGrade (%)": -12,
+        "speedLimitGrade (%)": 1
+    },
     "acceStepMode": -1,
     "deltaVel": -1,
     "deltaTime": -1,
-    "velSolver": 3,
+    "velSolver": 1,
     "velSolverTol": -1,
     "velSolverBracket": -1,
     "reportVelErrors": false
